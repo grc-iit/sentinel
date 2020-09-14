@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 include_directories(src)
 include_directories(include)
 
-set(SENTINEL_COMMON )
+set(SENTINEL_COMMON include/sentinel/common/configuration_manager.h include/sentinel/common/data_structures.h include/sentinel/common/enumerations.h include/sentinel/common/error_codes.h)
 set(SENTINEL_LIB ${SENTINEL_COMMON} src/sentinel/lib/client.cpp include/sentinel/client.h src/sentinel/job_manager/client.cpp include/sentinel/job_manager/client.h)
 add_library(sentinel SHARED ${SENTINEL_LIB})
 
