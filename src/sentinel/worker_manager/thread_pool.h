@@ -38,8 +38,8 @@ public:
 class ThreadPool {
 private:
     int size_;
-    std::vector<Rhea::Thread> pool_;
-    std::list<Rhea::Thread*> free_list_;
+    std::vector<Thread> pool_;
+    std::list<Thread*> free_list_;
 public:
     ThreadPool() = default;
     void Init(int count)  {

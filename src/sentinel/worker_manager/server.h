@@ -18,7 +18,7 @@ private:
     int GetTask();
     void ExecuteTask(int task_id);
 public:
-    WorkerThread();
+    Worker();
     void Run(std::future<void> loop_cond);
     void Enqueue(int task_id);
     int GetQueueDepth();

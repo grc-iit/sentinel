@@ -5,7 +5,10 @@
 #ifndef SENTINEL_WORKER_MANAGER_CLIENT_H
 #define SENTINEL_WORKER_MANAGER_CLIENT_H
 
-namespace sentinel::WorkerManager {
+#include <basket.h>
+#include <memory>
+
+namespace sentinel::worker_manager {
 
 class Client {
 private:
