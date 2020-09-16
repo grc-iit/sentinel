@@ -19,8 +19,8 @@
 #include <boost/filesystem/operations.hpp>
 #include <sentinel/common/error_codes.h>
 
-#define SENTINEL_CONF basket::Singleton<symbios::ConfigurationManager>::GetInstance()
-namespace symbios {
+#define SENTINEL_CONF basket::Singleton<sentinel::ConfigurationManager>::GetInstance()
+namespace sentinel {
     class ConfigurationManager {
 
     private:

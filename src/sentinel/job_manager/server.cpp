@@ -2,35 +2,20 @@
 // Created by mani on 9/14/2020.
 //
 
-#include <sentinel/job_manager/server.h>
+#include <sentinel/job_manager/Server.h>
 
-sentinel::job_manager::server::server(){
-    SENTINEL_CONF->ConfigureJobManagerServer();
-    auto basket=BASKET_CONF;
-    rpc=basket::Singleton<RPCFactory>::GetInstance()->GetRPC(BASKET_CONF->RPC_PORT);
-    std::function<bool(uint32_t)> functionSubmitJob(std::bind(&sentinel::job_manager::server::SubmitJob, this, std::placeholders::_1));
-    std::function<bool(uint32_t,WorkerManagerStats&)> functionUpdateWorkerManagerStats(std::bind(&sentinel::job_manager::server::UpdateWorkerManagerStats, this, std::placeholders::_1, std::placeholders::_2));
-    std::function<std::pair<bool, WorkerManagerStats>(uint32_t)> functionGetWorkerManagerStats(std::bind(&sentinel::job_manager::server::GetWorkerManagerStats, this, std::placeholders::_1));
-    std::function<std::pair<uint32_t, uint32_t>(uint32_t)> functionGetNextNode(std::bind(&sentinel::job_manager::server::GetNextNode, this, std::placeholders::_1));
-    std::function<bool(ResourceAllocation&)> functionChangeResourceAllocation(std::bind(&sentinel::job_manager::server::ChangeResourceAllocation, this, std::placeholders::_1));
-    rpc->bind("SubmitJob", functionSubmitJob);
-    rpc->bind("UpdateWorkerManagerStats", functionUpdateWorkerManagerStats);
-    rpc->bind("GetWorkerManagerStats", functionGetWorkerManagerStats);
-    rpc->bind("GetNextNode", functionGetNextNode);
-    rpc->bind("ChangeResourceAllocation", functionChangeResourceAllocation);
-}
 
-void sentinel::job_manager::server::Run(std::future<void> futureObj) {
+void sentinel::job_manager::Server::Run(std::future<void> futureObj) {
     RunInternal(std::move(futureObj));
 }
 
-void sentinel::job_manager::server::RunInternal(std::future<void> futureObj) {
+void sentinel::job_manager::Server::RunInternal(std::future<void> futureObj) {
     while(futureObj.wait_for(std::chrono::milliseconds(1)) == std::future_status::timeout){
         usleep(10000);
     }
 }
 
-bool sentinel::job_manager::server::SubmitJob(uint32_t jobId){
+bool sentinel::job_manager::Server::SubmitJob(uint32_t jobId){
     auto classLoader = ClassLoader();
     job = classLoader.LoadJob(jobId);
 
@@ -47,31 +32,31 @@ bool sentinel::job_manager::server::SubmitJob(uint32_t jobId){
 
 }
 
-bool sentinel::job_manager::server::UpdateWorkerManagerStats(uint32_t workerManagerId, WorkerManagerStats &stats){
+bool sentinel::job_manager::Server::UpdateWorkerManagerStats(uint32_t workerManagerId, WorkerManagerStats &stats){
     auto possible_load = loadMap.find(workerManagerId);
     if (possible_load == loadMap.end()) loadMap.insert(std::pair<workmanager_id, WorkerManagerStats>(workerManagerId, stats));
     else possible_load->second = stats;
     return true;
 }
 
-std::pair<bool, WorkerManagerStats> sentinel::job_manager::server::GetWorkerManagerStats(uint32_t workerManagerId){
+std::pair<bool, WorkerManagerStats> sentinel::job_manager::Server::GetWorkerManagerStats(uint32_t workerManagerId){
     auto possible_load = loadMap.find(workerManagerId);
     if (possible_load == loadMap.end()) return std::pair<bool, WorkerManagerStats>(false, WorkerManagerStats());
     return std::pair<bool, WorkerManagerStats>(true, possible_load->second);
 }
 
-std::pair<workmanager_id, task_id> sentinel::job_manager::server::GetNextNode(uint32_t currentTaskId){
+std::pair<workmanager_id, task_id> sentinel::job_manager::Server::GetNextNode(uint32_t currentTaskId){
     auto possible_destination = destinationMap.find(currentTaskId);
     workmanager_id currentWorkermanagerId = possible_destination->second.first;
     //If we dont have a current destination, or the destination is over a certain fullness
     if (possible_destination == destinationMap.end() ||
-        loadMap.at(currentWorkermanagerId) > SENTINEL_CONF->MAX_LOAD) {
+        loadMap.at(currentWorkermanagerId).num_tasks_queued_ > SENTINEL_CONF->MAX_LOAD) {
             //find a new destination
-            workmanager_id newWorkermanager = findMinLoad();
+            workmanager_id newWorkermanager = FindMinLoad();
             task_id newTask;
             if(possible_destination == destinationMap.end()){
                 //What is the id of the next task
-                newTask = job.GetNextTaskId(currentTaskId);
+                newTask = job->GetNextTaskId(currentTaskId);
                 destinationMap.insert(std::pair<task_id, std::pair<workmanager_id, task_id>>(currentTaskId,
                         std::pair<workmanager_id, task_id>(newWorkermanager, newTask)));
             }
@@ -83,11 +68,11 @@ std::pair<workmanager_id, task_id> sentinel::job_manager::server::GetNextNode(ui
     return possible_destination->second;
 }
 
-bool sentinel::job_manager::server::ChangeResourceAllocation(ResourceAllocation &resourceAllocation){
+bool sentinel::job_manager::Server::ChangeResourceAllocation(ResourceAllocation &resourceAllocation){
     return SpawnTaskManagers(resourceAllocation);
 }
 
-bool sentinel::job_manager::server::SpawnTaskManagers(ResourceAllocation &resourceAllocation) {
+bool sentinel::job_manager::Server::SpawnTaskManagers(ResourceAllocation &resourceAllocation) {
     MPI_Info info;
     MPI_Info_create(&info);
     MPI_Info_set(info, "hostfile",
@@ -99,7 +84,7 @@ bool sentinel::job_manager::server::SpawnTaskManagers(ResourceAllocation &resour
     return true;
 }
 
-workmanager_id sentinel::job_manager::server::findMinLoad() {
+workmanager_id sentinel::job_manager::Server::FindMinLoad() {
     auto min = *min_element(loadMap.begin(), loadMap.end(),[](const auto &l, const auto &r) { return l.second < r.second; });
     return min.first;
 }
