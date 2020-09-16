@@ -54,6 +54,9 @@ typedef struct ResourceAllocation {
 
     CharStruct newWorkermanagerNodes; // for file io, the "id_" is the filename; for object store io, the "id_" is the key.
     uint16_t numNewWorkermanager;
+    uint16_t num_nodes_;
+    uint16_t num_procs_per_node;
+    uint16_t num_threads_per_proc;
 
     /*Define the default, copy and move constructor*/
     ResourceAllocation(): newWorkermanagerNodes(), numNewWorkermanager(0){}
@@ -61,11 +64,17 @@ typedef struct ResourceAllocation {
                                                          numNewWorkermanager(other.numNewWorkermanager){}
     ResourceAllocation(ResourceAllocation &other): newWorkermanagerNodes(other.newWorkermanagerNodes),
                                                    numNewWorkermanager(other.numNewWorkermanager){}
+    ResourceAllocation(): num_nodes_(), num_procs_per_node(0), num_threads_per_proc(){}
+    ResourceAllocation(const ResourceAllocation &other): num_nodes_(other.num_nodes_), num_procs_per_node(other.num_procs_per_node), num_threads_per_proc(other.num_threads_per_proc){}
+    ResourceAllocation(ResourceAllocation &other): num_nodes_(other.num_nodes_), num_procs_per_node(other.num_procs_per_node), num_threads_per_proc(other.num_threads_per_proc){}
 
     /*Define Assignment Operator*/
     ResourceAllocation &operator=(const ResourceAllocation &other){
         newWorkermanagerNodes = other.newWorkermanagerNodes;
         numNewWorkermanager = other.numNewWorkermanager;
+        num_nodes_ = other.num_nodes_;
+        num_procs_per_node = other.num_procs_per_node;
+        num_threads_per_proc = other.num_threads_per_proc;
         return *this;
     }
 } ResourceAllocation;
@@ -77,9 +86,9 @@ typedef struct WorkerManagerStats {
     uint32_t num_tasks_queued_;
     WorkerManagerStats():thrpt_kops_(0),num_tasks_exec_(0),num_tasks_queued_(0){}
     WorkerManagerStats(double epoch_time, int num_tasks_assigned, int num_tasks_queued) {
-        num_tasks_queued_ = num_tasks_queued;
-        num_tasks_exec_ = num_tasks_assigned - num_tasks_queued_;
         thrpt_kops_ = num_tasks_exec_ / epoch_time;
+        num_tasks_exec_ = num_tasks_assigned - num_tasks_queued;
+        num_tasks_queued_ = num_tasks_queued;
     }
     /*Define the default, copy and move constructor*/
     WorkerManagerStats(const WorkerManagerStats &other): thrpt_kops_(other.thrpt_kops_), num_tasks_exec_(other.num_tasks_exec_), num_tasks_queued_(other.num_tasks_queued_) {}
@@ -92,6 +101,83 @@ typedef struct WorkerManagerStats {
         return *this;
     }
 } WorkerManagerStats;
+
+namespace clmdep_msgpack {
+    MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
+            namespace adaptor {
+                namespace mv1 = clmdep_msgpack::v1;
+                template<>
+                struct convert<WorkerManagerStats> {
+                    mv1::object const &operator()(mv1::object const &o, WorkerManagerStats &input) const {
+                        input.thrpt_kops_ = o.via.array.ptr[0].as<double>();
+                        input.num_tasks_exec_ = o.via.array.ptr[1].as<uint32_t>();
+                        input.num_tasks_queued_ = o.via.array.ptr[2].as<uint32_t>();
+                        return o;
+                    }
+                };
+
+                template<>
+                struct pack<WorkerManagerStats> {
+                    template<typename Stream>
+                    packer <Stream> &operator()(mv1::packer <Stream> &o, WorkerManagerStats const &input) const {
+                        o.pack_array(3);
+                        o.pack(input.thrpt_kops_);
+                        o.pack(input.num_tasks_exec_);
+                        o.pack(input.num_tasks_queued_);
+                        return o;
+                    }
+                };
+
+                template<>
+                struct object_with_zone<WorkerManagerStats> {
+                    void operator()(mv1::object::with_zone &o, WorkerManagerStats const &input) const {
+                        o.type = type::ARRAY;
+                        o.via.array.size = 3;
+                        o.via.array.ptr = static_cast<clmdep_msgpack::object *>(o.zone.allocate_align(
+                                sizeof(mv1::object) * o.via.array.size, MSGPACK_ZONE_ALIGNOF(mv1::object)));
+                        o.via.array.ptr[0] = mv1::object(input.thrpt_kops_, o.zone);
+                        o.via.array.ptr[1] = mv1::object(input.num_tasks_exec_, o.zone);
+                        o.via.array.ptr[2] = mv1::object(input.num_tasks_queued_, o.zone);
+                    }
+                };
+
+                template<>
+                struct convert<ResourceAllocation> {
+                    mv1::object const &operator()(mv1::object const &o, ResourceAllocation &input) const {
+                        input.num_nodes_ = o.via.array.ptr[0].as<uint16_t>();
+                        input.num_procs_per_node = o.via.array.ptr[1].as<uint16_t>();
+                        input.num_threads_per_proc = o.via.array.ptr[2].as<uint16_t>();
+                        return o;
+                    }
+                };
+
+                template<>
+                struct pack<ResourceAllocation> {
+                    template<typename Stream>
+                    packer <Stream> &operator()(mv1::packer <Stream> &o, ResourceAllocation const &input) const {
+                        o.pack_array(3);
+                        o.pack(input.num_nodes_);
+                        o.pack(input.num_procs_per_node);
+                        o.pack(input.num_threads_per_proc);
+                        return o;
+                    }
+                };
+
+                template<>
+                struct object_with_zone<ResourceAllocation> {
+                    void operator()(mv1::object::with_zone &o, ResourceAllocation const &input) const {
+                        o.type = type::ARRAY;
+                        o.via.array.size = 3;
+                        o.via.array.ptr = static_cast<clmdep_msgpack::object *>(o.zone.allocate_align(
+                                sizeof(mv1::object) * o.via.array.size, MSGPACK_ZONE_ALIGNOF(mv1::object)));
+                        o.via.array.ptr[0] = mv1::object(input.num_nodes_, o.zone);
+                        o.via.array.ptr[1] = mv1::object(input.num_procs_per_node, o.zone);
+                        o.via.array.ptr[2] = mv1::object(input.num_threads_per_proc, o.zone);
+                    }
+                };
+            }  // namespace adaptor
+    }
+}  // namespace clmdep_msgpack
 
 
 std::ostream &operator<<(std::ostream &os, Data &data);
