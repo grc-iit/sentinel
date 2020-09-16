@@ -5,11 +5,14 @@
 #ifndef RHEA_DATA_STRUCTURES_H
 #define RHEA_DATA_STRUCTURES_H
 
-#include <basket.h>
+
 #include <basket/common/data_structures.h>
 #include <rpc/msgpack.hpp>
 
+#include <basket.h>
+
 typedef struct Data {
+
     CharStruct id_; // for file io, the "id_" is the filename; for object store io, the "id_" is the key.
     size_t position_; // read/write start position
     char* buffer_;  // data content
@@ -34,7 +37,9 @@ typedef struct Data {
     }
 } Data;
 
+
 typedef struct ResourceAllocation {
+
     CharStruct id_; // for file io, the "id_" is the filename; for object store io, the "id_" is the key.
     size_t position_; // read/write start position
     char* buffer_;  // data content
@@ -60,13 +65,8 @@ typedef struct ResourceAllocation {
 } ResourceAllocation;
 
 typedef struct WorkerManagerStats {
-    CharStruct id_; // for file io, the "id_" is the filename; for object store io, the "id_" is the key.
-    size_t position_; // read/write start position
-    char* buffer_;  // data content
-    size_t data_size_;
-    uint16_t storage_index_;
 
-    double thrpt_kops;
+   double thrpt_kops;
     int num_tasks_exec_;
     int num_tasks_queued_;
 
@@ -76,6 +76,7 @@ typedef struct WorkerManagerStats {
         thrpt_kops = num_tasks_exec_ / thrpt_kops;
     }
 } WorkerManagerStats;
+
 
 namespace clmdep_msgpack {
     MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {

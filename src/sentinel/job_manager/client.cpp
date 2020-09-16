@@ -3,9 +3,6 @@
 //
 
 #include <sentinel/job_manager/client.h>
-#include <sentinel/common/debug.h>
-#include <rpc/client.h>
-#include <unistd.h>
 
 //AUTO_TRACER("sentinel::job_manager::client::SubmitJob", request);
 //COMMON_DBGVAR(num_servers);
@@ -20,14 +17,14 @@ bool sentinel::job_manager::client::SubmitJob(uint32_t jobId) {
     auto num_servers = rpc->call<RPCLIB_MSGPACK::object_handle>(server, "SubmitJob", jobId) .as<bool>();
 }
 
-bool sentinel::job_manager::client::UpdateWorkerManagerStats(uint32_t workerManagerId, WorkerManagerStats stats) {
+bool sentinel::job_manager::client::UpdateWorkerManagerStats(uint32_t workerManagerId, WorkerManagerStats &stats) {
     int server = 0;
     auto ret = rpc->call<RPCLIB_MSGPACK::object_handle>(server, "GetWorkerManagerStats", workerManagerId,stats).as<bool>();
 }
 
-WorkerManagerStats sentinel::job_manager::client::GetWorkerManagerStats(uint32_t workerManagerId) {
+std::pair<bool, WorkerManagerStats> sentinel::job_manager::client::GetWorkerManagerStats(uint32_t workerManagerId) {
     int server = 0;
-    auto ret = rpc->call<RPCLIB_MSGPACK::object_handle>(server, "GetWorkerManagerStats", workerManagerId).as<WorkerManagerStats>();
+    auto ret = rpc->call<RPCLIB_MSGPACK::object_handle>(server, "GetWorkerManagerStats", workerManagerId).as<std::pair<bool, WorkerManagerStats>>();
 }
 
 std::pair<uint32_t, uint32_t> sentinel::job_manager::client::GetNextNode(uint32_t currentTaskId) {
