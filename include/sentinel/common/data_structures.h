@@ -52,26 +52,20 @@ typedef struct Job{
 
 typedef struct ResourceAllocation {
 
-    CharStruct id_; // for file io, the "id_" is the filename; for object store io, the "id_" is the key.
-    size_t position_; // read/write start position
-    char* buffer_;  // data content
-    size_t data_size_;
-    uint16_t storage_index_;
+    CharStruct newWorkermanagerNodes; // for file io, the "id_" is the filename; for object store io, the "id_" is the key.
+    uint16_t numNewWorkermanager;
 
     /*Define the default, copy and move constructor*/
-    ResourceAllocation(): id_(), position_(0), buffer_(NULL), storage_index_(),data_size_(){}
-    ResourceAllocation(const Data &other): id_(other.id_), position_(other.position_), buffer_(other.buffer_),
-                             storage_index_(other.storage_index_),data_size_(other.data_size_) {}
-    ResourceAllocation(ResourceAllocation &other): id_(other.id_), position_(other.position_), buffer_(other.buffer_),
-                       storage_index_(other.storage_index_),data_size_(other.data_size_) {}
+    ResourceAllocation(): newWorkermanagerNodes(), numNewWorkermanager(0){}
+    ResourceAllocation(const ResourceAllocation &other): newWorkermanagerNodes(other.newWorkermanagerNodes),
+                                                         numNewWorkermanager(other.numNewWorkermanager){}
+    ResourceAllocation(ResourceAllocation &other): newWorkermanagerNodes(other.newWorkermanagerNodes),
+                                                   numNewWorkermanager(other.numNewWorkermanager){}
 
     /*Define Assignment Operator*/
     ResourceAllocation &operator=(const ResourceAllocation &other){
-        id_ = other.id_;
-        position_ = other.position_;
-        buffer_ = other.buffer_;
-        data_size_ = other.data_size_;
-        storage_index_ = other.storage_index_;
+        newWorkermanagerNodes = other.newWorkermanagerNodes;
+        numNewWorkermanager = other.numNewWorkermanager;
         return *this;
     }
 } ResourceAllocation;
