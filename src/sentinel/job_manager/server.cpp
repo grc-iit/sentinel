@@ -2,104 +2,104 @@
 // Created by mani on 9/14/2020.
 //
 
-#include <symbios/server/server.h>
-#include <common/debug.h>
-#include <symbios/data_distribution/data_distribution_factory.h>
-#include <symbios/metadata_orchestrator/metadata_orchestrator.h>
-#include <symbios/io_clients/io_factory.h>
+#include <sentinel/job_manager/server.h>
 
-symbios::Server::Server(){
-    SYMBIOS_CONF->ConfigureSymbiosServer();
+sentinel::job_manager::server::server(){
+    SENTINEL_CONF->ConfigureJobManagerServer();
     auto basket=BASKET_CONF;
     rpc=basket::Singleton<RPCFactory>::GetInstance()->GetRPC(BASKET_CONF->RPC_PORT);
-    std::function<int(Data&,Data&)> functionStoreRequest(std::bind(&Server::Store, this, std::placeholders::_1, std::placeholders::_2));
-    std::function<Data(Data&,Data&)> functionLocateRequest(std::bind(&Server::Locate, this, std::placeholders::_1, std::placeholders::_2));
-    std::function<size_t(Data&)> functionSizeRequest(std::bind(&Server::Size, this, std::placeholders::_1));
-    std::function<bool(Data&)> functionDeleteRequest(std::bind(&Server::Delete, this, std::placeholders::_1));
-    rpc->bind("StoreRequest", functionStoreRequest);
-    rpc->bind("LocateRequest", functionLocateRequest);
-    rpc->bind("DeleteRequest", functionDeleteRequest);
-    rpc->bind("SizeRequest", functionSizeRequest);
-    /**
-     * Preload classes.
-     */
-    basket::Singleton<DataDistributionEngineFactory>::GetInstance()->GetDataDistributionEngine(SYMBIOS_CONF->DATA_DISTRIBUTION_POLICY);
-    basket::Singleton<MetadataOrchestrator>::GetInstance();
-    basket::Singleton<IOFactory>::GetInstance();
-
+    std::function<bool(uint32_t)> functionSubmitJob(std::bind(&sentinel::job_manager::server::SubmitJob, this, std::placeholders::_1));
+    std::function<bool(uint32_t,WorkerManagerStats&)> functionUpdateWorkerManagerStats(std::bind(&sentinel::job_manager::server::UpdateWorkerManagerStats, this, std::placeholders::_1, std::placeholders::_2));
+    std::function<std::pair<bool, WorkerManagerStats>(uint32_t)> functionGetWorkerManagerStats(std::bind(&sentinel::job_manager::server::GetWorkerManagerStats, this, std::placeholders::_1));
+    std::function<std::pair<uint32_t, uint32_t>(uint32_t)> functionGetNextNode(std::bind(&sentinel::job_manager::server::GetNextNode, this, std::placeholders::_1));
+    std::function<bool(ResourceAllocation&)> functionChangeResourceAllocation(std::bind(&sentinel::job_manager::server::ChangeResourceAllocation, this, std::placeholders::_1));
+    rpc->bind("SubmitJob", functionSubmitJob);
+    rpc->bind("UpdateWorkerManagerStats", functionUpdateWorkerManagerStats);
+    rpc->bind("GetWorkerManagerStats", functionGetWorkerManagerStats);
+    rpc->bind("GetNextNode", functionGetNextNode);
+    rpc->bind("ChangeResourceAllocation", functionChangeResourceAllocation);
 }
 
-void symbios::Server::Run(std::future<void> futureObj) {
+void sentinel::job_manager::server::Run(std::future<void> futureObj) {
     RunInternal(std::move(futureObj));
 }
 
-void symbios::Server::RunInternal(std::future<void> futureObj) {
+void sentinel::job_manager::server::RunInternal(std::future<void> futureObj) {
     while(futureObj.wait_for(std::chrono::milliseconds(1)) == std::future_status::timeout){
         usleep(10000);
     }
 }
 
-int symbios::Server::Store(Data &source, Data &destination){
-    AUTO_TRACER(std::string("symbios::Server::StoreRequest"), request);
-    auto dde = basket::Singleton<DataDistributionEngineFactory>::GetInstance()->GetDataDistributionEngine(SYMBIOS_CONF->DATA_DISTRIBUTION_POLICY);
-    auto distributions = dde->Distribute(source,destination);
-    basket::Singleton<MetadataOrchestrator>::GetInstance()->Store(destination,distributions);
-    for(auto distribution:distributions){
-        basket::Singleton<IOFactory>::GetInstance()->GetIOClient(distribution.destination_data_.storage_index_)->Write(distribution.source_data_, distribution.destination_data_);
-        COMMON_DBGMSG("Storing data in "<<distribution.destination_data_.storage_index_);
-    }
+bool sentinel::job_manager::server::SubmitJob(uint32_t jobId){
+    auto classLoader = ClassLoader();
+    job = classLoader.LoadJob(jobId);
 
-    return SYMBIOS_CONF->SERVER_COUNT;
+    ResourceAllocation defaultResourceAllocation;
+    /*
+     * Generate default ResourceAllocation
+     */
+
+    SpawnTaskManagers(defaultResourceAllocation);
+
+    /*
+     * Something has to happen here with the dag
+     */
+
 }
 
-Data symbios::Server::Locate(Data &source, Data &destination){
-    AUTO_TRACER(std::string("symbios::Server::LocateRequest"), request);
-    Metadata primary_metadata;
-    auto distributions = basket::Singleton<MetadataOrchestrator>::GetInstance()->Locate(source, primary_metadata);
-    int total_size= 0;
-    for(auto &distribution:distributions){
-        basket::Singleton<IOFactory>::GetInstance()->GetIOClient(distribution.destination_data_.storage_index_)->Read(distribution.source_data_,distribution.destination_data_);
-        total_size+=distribution.destination_data_.data_size_;
-    }
-    destination.buffer_= static_cast<char *>(malloc(total_size));
-    long start=0;
-    for(auto &distribution:distributions){
-        memcpy(destination.buffer_+start,distribution.destination_data_.buffer_+ distribution.destination_data_.position_, distribution.destination_data_.data_size_- distribution.destination_data_.position_);
-        free(distribution.destination_data_.buffer_);
-        start+=distribution.destination_data_.data_size_ - distribution.destination_data_.position_;
-    }
-    COMMON_DBGVAR(destination.buffer_);
-    return destination;
+bool sentinel::job_manager::server::UpdateWorkerManagerStats(uint32_t workerManagerId, WorkerManagerStats &stats){
+    auto possible_load = loadMap.find(workerManagerId);
+    if (possible_load == loadMap.end()) loadMap.insert(std::pair<workmanager_id, WorkerManagerStats>(workerManagerId, stats));
+    else possible_load->second = stats;
+    return true;
 }
 
-size_t symbios::Server::Size(Data &request) {
-    AUTO_TRACER(std::string("symbios::Server::Size"), request);
-    Metadata primary_metadata;
-    std::vector<DataDistribution> distributions;
-    try {
-        distributions = basket::Singleton<MetadataOrchestrator>::GetInstance()->Locate(request, primary_metadata);
-    } catch (ErrorException e) {
-        return 0;
-    }
-    int total_size= 0;
-    for(auto &distribution:distributions){
-        total_size+=basket::Singleton<IOFactory>::GetInstance()->GetIOClient(distribution.destination_data_.storage_index_)->Size(distribution.destination_data_);
-    }
-    return total_size;
+std::pair<bool, WorkerManagerStats> sentinel::job_manager::server::GetWorkerManagerStats(uint32_t workerManagerId){
+    auto possible_load = loadMap.find(workerManagerId);
+    if (possible_load == loadMap.end()) return std::pair<bool, WorkerManagerStats>(false, WorkerManagerStats());
+    return std::pair<bool, WorkerManagerStats>(true, possible_load->second);
 }
 
-bool symbios::Server::Delete(Data &request) {
-    AUTO_TRACER(std::string("symbios::Server::Size"), request);
-    Metadata primary_metadata;
-    std::vector<DataDistribution> distributions;
-    try {
-        distributions = basket::Singleton<MetadataOrchestrator>::GetInstance()->Locate(request, primary_metadata);
-    } catch (ErrorException e) {
-        return false;
+std::pair<workmanager_id, task_id> sentinel::job_manager::server::GetNextNode(uint32_t currentTaskId){
+    auto possible_destination = destinationMap.find(currentTaskId);
+    workmanager_id currentWorkermanagerId = possible_destination->second.first;
+    //If we dont have a current destination, or the destination is over a certain fullness
+    if (possible_destination == destinationMap.end() ||
+        loadMap.at(currentWorkermanagerId) > SENTINEL_CONF->MAX_LOAD) {
+            //find a new destination
+            workmanager_id newWorkermanager = findMinLoad();
+            task_id newTask;
+            if(possible_destination == destinationMap.end()){
+                //What is the id of the next task
+                newTask = job.GetNextTaskId(currentTaskId);
+                destinationMap.insert(std::pair<task_id, std::pair<workmanager_id, task_id>>(currentTaskId,
+                        std::pair<workmanager_id, task_id>(newWorkermanager, newTask)));
+            }
+            else {
+                newTask = possible_destination->second.second;
+                possible_destination->second = std::pair<workmanager_id, task_id>(newWorkermanager, newTask);
+            }
     }
-    bool status = true;
-    for(auto &distribution:distributions){
-        status = status && basket::Singleton<IOFactory>::GetInstance()->GetIOClient(distribution.destination_data_.storage_index_)->Remove(distribution.source_data_);
-    }
-    return status && basket::Singleton<MetadataOrchestrator>::GetInstance()->Delete(request);
+    return possible_destination->second;
+}
+
+bool sentinel::job_manager::server::ChangeResourceAllocation(ResourceAllocation &resourceAllocation){
+    return SpawnTaskManagers(resourceAllocation);
+}
+
+bool sentinel::job_manager::server::SpawnTaskManagers(ResourceAllocation &resourceAllocation) {
+    MPI_Info info;
+    MPI_Info_create(&info);
+    MPI_Info_set(info, "hostfile",
+                 ""); //TODO: path to taskManager hosts (https://www.open-mpi.org/doc/current/man3/MPI_Comm_spawn.3.php)
+
+    MPI_Comm_spawn(taskManagerExecutable.c_str(), MPI_ARGV_NULL, clusterConfig.taskManagerNodes.size(),
+                   info, 0, MPI_COMM_SELF, &taskManagerComm,
+                   MPI_ERRCODES_IGNORE);
+    return true;
+}
+
+workmanager_id sentinel::job_manager::server::findMinLoad() {
+    auto min = *min_element(loadMap.begin(), loadMap.end(),[](const auto &l, const auto &r) { return l.second < r.second; });
+    return min.first;
 }

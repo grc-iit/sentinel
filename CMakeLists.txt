@@ -12,14 +12,20 @@ set(SENTINEL_COMMON include/sentinel/common/configuration_manager.h include/sent
 set(SENTINEL_LIB ${SENTINEL_COMMON} src/sentinel/lib/client.cpp include/sentinel/client.h src/sentinel/job_manager/client.cpp include/sentinel/job_manager/client.h include/sentinel/common/daemon.h)
 add_library(sentinel SHARED ${SENTINEL_LIB})
 
+target_link_libraries(sentinel -lpthread -lbasket -lrpc  -lboost_system -lboost_filesystem -lmpi)
+
 set(SENTINEL_JOB_MANAGER ${SENTINEL_COMMON} src/sentinel/job_manager/server.cpp include/sentinel/job_manager/server.h src/sentinel/job_manager/main.cpp)
 add_executable(sentinel_job_manager ${SENTINEL_JOB_MANAGER})
+target_link_libraries(sentinel_job_manager -lpthread -lbasket -lrpc  -lboost_system -lboost_filesystem -lmpi)
 
-set(SENTINEL_WORKER_MANAGER ${SENTINEL_COMMON} src/sentinel/worker_manager/server.cpp src/sentinel/worker_manager/server.h src/sentinel/worker_manager/main.cpp src/sentinel/worker_manager/client.cpp include/sentinel/worker_manager/client.h)
+set(SENTINEL_WORKER_MANAGER ${SENTINEL_COMMON} src/sentinel/worker_manager/main.cpp src/sentinel/worker_manager/server.cpp src/sentinel/worker_manager/server.h src/sentinel/worker_manager/client.cpp include/sentinel/worker_manager/client.h)
 add_executable(sentinel_worker_manager ${SENTINEL_WORKER_MANAGER})
+target_link_libraries(sentinel_worker_manager -lpthread -lbasket -lrpc  -lboost_system -lboost_filesystem -lmpi)
 
 set(SENTINEL_MONITOR_LIB ${SENTINEL_COMMON} src/sentinel/monitor/client.cpp include/sentinel/monitor/client.h)
 add_library(sentinel_monitor SHARED ${SENTINEL_MONITOR_LIB})
+target_link_libraries(sentinel_monitor -lpthread -lbasket -lrpc  -lboost_system -lboost_filesystem -lmpi)
 
 set(SENTINEL_MONITOR_SERVER ${SENTINEL_COMMON})
 add_executable(sentinel_monitor_server ${SENTINEL_MONITOR_SERVER} src/sentinel/monitor/server.cpp src/sentinel/monitor/server.h src/sentinel/monitor/main.cpp)
+target_link_libraries(sentinel_monitor_server -lpthread -lbasket -lrpc  -lboost_system -lboost_filesystem -lmpi)

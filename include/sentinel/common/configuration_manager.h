@@ -113,6 +113,8 @@ namespace symbios {
         CharStruct CONFIGURATION_FILE;
         uint16_t JOBMANAGER_COUNT, WORKERMANAGER_COUNT;
         uint16_t RANDOM_SEED;
+        uint16_t MAX_LOAD;
+
 
         ConfigurationManager() : JOBMANAGER_LISTS("/home/user/symbios/conf/server_lists/single_node_rhea_jobmanager"),
                                  WORKERMANAGER_LISTS("/home/user/symbios/conf/server_lists/single_node_rhea_workermanager"),
@@ -125,6 +127,7 @@ namespace symbios {
                                  CONFIGURATION_FILE("/home/user/sentinel/conf/base_rhea.conf"),
                                  JOBMANAGER_COUNT(1),
                                  WORKERMANAGER_COUNT(1),
+                                 MAX_LOAD(0.8),
                                  RANDOM_SEED(100){}
 
         void LoadConfiguration() {
