@@ -8,7 +8,7 @@
 #include <string>
 #include "thread_pool.h"
 #include <basket.h>
-#include <common/debug.h>
+#include <sentinel/common/debug.h>
 
 namespace sentinel::worker_manager {
 

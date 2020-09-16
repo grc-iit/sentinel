@@ -29,7 +29,7 @@ public:
     template<typename ...Args>
     void Assign(Args ...args) {
         loop_cond_ = std::promise<void>();
-        thread_complete_ = std::async(&Thread::Run, this, args...);
+        thread_complete_ = std::async([this, args...]() { this->Run(args...); });
     }
 
     template<typename ...Args>
@@ -38,10 +38,10 @@ public:
             obj_->Run(std::move(loop_cond_.get_future()), args...);
         }
         catch(...) {
-            pool_->Stop();
+            pool_->Stop(tid_);
             throw 1; //TODO: Re-throw exception
         }
-        pool_->Stop();
+        pool_->Stop(tid_);
     }
 
     bool IsActive() {
