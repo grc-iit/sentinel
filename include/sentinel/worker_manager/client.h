@@ -16,9 +16,9 @@ private:
 public:
     Client();
     void Init();
-    void AssignTask(int server_index, int task_id);
-    void TerminateWorkerManager(int server_index);
-    void FinalizeWorkerManager(int server_index);
+    bool AssignTask(int server_index, int task_id);
+    bool TerminateWorkerManager(int server_index);
+    bool FinalizeWorkerManager(int server_index);
     void Finalize();
 };
 

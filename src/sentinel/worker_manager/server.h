@@ -8,6 +8,7 @@
 #include <string>
 #include "thread_pool.h"
 #include <basket.h>
+#include <common/debug.h>
 
 namespace sentinel::worker_manager {
 
@@ -26,17 +27,19 @@ public:
 
 class Server {
 private:
-    sentinel::ThreadPool pool_;
+    sentinel::ThreadPool<Worker> pool_;
     std::shared_ptr<RPC> client_rpc_;
-    int num_tasks_exec_, min_tasks_exec_update_;
-    //TODO: Add clock_t for epoch
+    int num_tasks_assigned_ = 0, min_tasks_assigned_update_ = 512;
+    common::debug::Timer t_;
 private:
     bool ReadyToUpdateJobManager();
     void UpdateJobManager();
-    Worker &FindMinimumQueue();
+    std::shared_ptr<sentinel::worker_manager::Worker> FindMinimumQueue();
+    int GetNumTasksQueued(void);
 public:
     Server();
     void Init();
+    void Run(std::future<void> loop_cond);
     void AssignTask(int task_id);
     void Terminate();
     void Finalize();
