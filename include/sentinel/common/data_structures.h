@@ -5,10 +5,14 @@
 #ifndef RHEA_DATA_STRUCTURES_H
 #define RHEA_DATA_STRUCTURES_H
 
+
 #include <basket/common/data_structures.h>
 #include <rpc/msgpack.hpp>
 
-typedef struct Data{
+#include <basket.h>
+
+typedef struct Data {
+
     CharStruct id_; // for file io, the "id_" is the filename; for object store io, the "id_" is the key.
     size_t position_; // read/write start position
     char* buffer_;  // data content
@@ -33,7 +37,9 @@ typedef struct Data{
     }
 } Data;
 
-typedef struct ResourceAllocation{
+
+typedef struct ResourceAllocation {
+
     CharStruct id_; // for file io, the "id_" is the filename; for object store io, the "id_" is the key.
     size_t position_; // read/write start position
     char* buffer_;  // data content
@@ -58,39 +64,20 @@ typedef struct ResourceAllocation{
     }
 } ResourceAllocation;
 
-typedef struct WorkerManagerStats{
-    CharStruct id_; // for file io, the "id_" is the filename; for object store io, the "id_" is the key.
-    size_t position_; // read/write start position
-    char* buffer_;  // data content
-    size_t data_size_;
-    uint16_t storage_index_;
+typedef struct WorkerManagerStats {
 
-    /*Define the default, copy and move constructor*/
-    WorkerManagerStats(): id_(), position_(0), buffer_(NULL), storage_index_(),data_size_(){}
-    WorkerManagerStats(const Data &other): id_(other.id_), position_(other.position_), buffer_(other.buffer_),
-                                           storage_index_(other.storage_index_),data_size_(other.data_size_) {}
-    WorkerManagerStats(ResourceAllocation &other): id_(other.id_), position_(other.position_), buffer_(other.buffer_),
-                                                   storage_index_(other.storage_index_),data_size_(other.data_size_) {}
+   double thrpt_kops;
+    int num_tasks_exec_;
+    int num_tasks_queued_;
 
-    /*Define Assignment Operator*/
-    WorkerManagerStats &operator=(const WorkerManagerStats &other){
-        id_ = other.id_;
-        position_ = other.position_;
-        buffer_ = other.buffer_;
-        data_size_ = other.data_size_;
-        storage_index_ = other.storage_index_;
-        return *this;
-    }
-
-    bool operator<(const WorkerManagerStats &other) const{
-        return position_ < other.position_;
-    }
-    bool operator>(const uint16_t other) const{
-        return position_ > other;
+    WorkerManagerStats(double epoch_time, int num_tasks_assigned, int num_tasks_queued) {
+        num_tasks_queued_ = num_tasks_queued;
+        num_tasks_exec_ = num_tasks_assigned - num_tasks_queued_;
+        thrpt_kops = num_tasks_exec_ / thrpt_kops;
     }
 } WorkerManagerStats;
 
-#include <rpc/msgpack.hpp>
+
 namespace clmdep_msgpack {
     MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
         namespace adaptor {

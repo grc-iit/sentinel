@@ -115,6 +115,7 @@ namespace symbios {
         uint16_t RANDOM_SEED;
         uint16_t MAX_LOAD;
 
+
         ConfigurationManager() : JOBMANAGER_LISTS("/home/user/symbios/conf/server_lists/single_node_rhea_jobmanager"),
                                  WORKERMANAGER_LISTS("/home/user/symbios/conf/server_lists/single_node_rhea_workermanager"),
                                  JOBMANAGER_PORT(8000),
