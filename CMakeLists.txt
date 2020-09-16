@@ -15,7 +15,7 @@ add_library(sentinel SHARED ${SENTINEL_LIB})
 set(SENTINEL_JOB_MANAGER ${SENTINEL_COMMON} src/sentinel/job_manager/server.cpp src/sentinel/job_manager/server.h src/sentinel/job_manager/main.cpp)
 add_executable(sentinel_job_manager ${SENTINEL_JOB_MANAGER})
 
-set(SENTINEL_WORKER_MANAGER ${SENTINEL_COMMON} src/sentinel/worker_manager/server.cpp src/sentinel/worker_manager/server.h src/sentinel/worker_manager/main.cpp src/sentinel/worker_manager/client.cpp include/sentinel/worker_manager/client.h)
+set(SENTINEL_WORKER_MANAGER ${SENTINEL_COMMON} src/sentinel/worker_manager/main.cpp src/sentinel/worker_manager/server.cpp src/sentinel/worker_manager/server.h src/sentinel/worker_manager/client.cpp include/sentinel/worker_manager/client.h)
 add_executable(sentinel_worker_manager ${SENTINEL_WORKER_MANAGER})
 
 set(SENTINEL_MONITOR_LIB ${SENTINEL_COMMON} src/sentinel/monitor/client.cpp include/sentinel/monitor/client.h)

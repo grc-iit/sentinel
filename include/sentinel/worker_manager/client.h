@@ -1,15 +1,24 @@
 //
-// Created by mani on 9/14/2020.
+// Created by lukemartinlogan on 9/16/20.
 //
 
-#ifndef RHEA_CLIENT_H
-#define RHEA_CLIENT_H
+#ifndef SENTINEL_WORKER_MANAGER_CLIENT_H
+#define SENTINEL_WORKER_MANAGER_CLIENT_H
 
-namespace sentinel::worker_manager {
-    class client {
+namespace sentinel::WorkerManager {
 
-    };
-}
+class Client {
+private:
+    std::shared_ptr<RPC> server_rpc;
+public:
+    Client();
+    void Init();
+    void AssignTask(int server_index, int task_id);
+    void TerminateWorkerManager(int server_index);
+    void FinalizeWorkerManager(int server_index);
+    void Finalize();
+};
 
+};
 
-#endif //RHEA_CLIENT_H
+#endif //SENTINEL_WORKER_MANAGER_CLIENT_H

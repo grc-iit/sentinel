@@ -1,5 +1,4 @@
 //
-// Created by mani on 9/14/2020.
+// Created by lukemartinlogan on 9/16/20.
 //
 
-#include "sentinel/worker_manager/client.h"
