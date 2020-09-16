@@ -4,6 +4,8 @@ set(CMAKE_CXX_STANDARD 17)
 
 include_directories(src)
 include_directories(include)
+include_directories(${CMAKE_SOURCE_DIR}/scs_io_common/include)
+
 
 set(SENTINEL_COMMON include/sentinel/common/configuration_manager.h include/sentinel/common/data_structures.h
         include/sentinel/common/enumerations.h include/sentinel/common/error_codes.h include/sentinel/common/error_definition.h
@@ -14,7 +16,7 @@ add_library(sentinel SHARED ${SENTINEL_LIB})
 
 target_link_libraries(sentinel -lpthread -lbasket -lrpc  -lboost_system -lboost_filesystem -lmpi)
 
-set(SENTINEL_JOB_MANAGER ${SENTINEL_COMMON} src/sentinel/job_manager/server.cpp include/sentinel/job_manager/server.h src/sentinel/job_manager/main.cpp)
+set(SENTINEL_JOB_MANAGER ${SENTINEL_COMMON} src/sentinel/job_manager/server.cpp include/sentinel/job_manager/Server.h src/sentinel/job_manager/main.cpp)
 add_executable(sentinel_job_manager ${SENTINEL_JOB_MANAGER})
 target_link_libraries(sentinel_job_manager -lpthread -lbasket -lrpc  -lboost_system -lboost_filesystem -lmpi)
 
