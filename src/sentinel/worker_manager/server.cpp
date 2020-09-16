@@ -77,7 +77,7 @@ bool sentinel::worker_manager::Server::ReadyToUpdateJobManager() {
 void sentinel::worker_manager::Server::UpdateJobManager() {
     double time_ms = t_.endTime();
     int num_tasks_queued = GetNumTasksQueued();
-    WorkerManagerStats wms(time_ms, num_tasks_assigned_, num_tasks_queued);
+    //WorkerManagerStats wms(time_ms, num_tasks_assigned_, num_tasks_queued);
     //TODO: Send worker manager stats to JobManager
 }
 
