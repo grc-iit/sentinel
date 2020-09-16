@@ -65,7 +65,7 @@ std::pair<workmanager_id, task_id> sentinel::job_manager::server::GetNextNode(ui
     workmanager_id currentWorkermanagerId = possible_destination->second.first;
     //If we dont have a current destination, or the destination is over a certain fullness
     if (possible_destination == destinationMap.end() ||
-        loadMap.at(currentWorkermanagerId) > SENTINEL_CONF->MAX_LOAD) {
+        loadMap.at(currentWorkermanagerId).num_tasks_queued_ > SENTINEL_CONF->MAX_LOAD) {
             //find a new destination
             workmanager_id newWorkermanager = findMinLoad();
             task_id newTask;
@@ -88,18 +88,23 @@ bool sentinel::job_manager::server::ChangeResourceAllocation(ResourceAllocation 
 }
 
 bool sentinel::job_manager::server::SpawnTaskManagers(ResourceAllocation &resourceAllocation) {
+    MPI_Comm taskManagerComm;
     MPI_Info info;
     MPI_Info_create(&info);
-    MPI_Info_set(info, "hostfile",
-                 ""); //TODO: path to taskManager hosts (https://www.open-mpi.org/doc/current/man3/MPI_Comm_spawn.3.php)
+    MPI_Info_set(info, "hostfile", SENTINEL_CONF->WORKERMANAGER_HOSTFILE);
 
-    MPI_Comm_spawn(taskManagerExecutable.c_str(), MPI_ARGV_NULL, clusterConfig.taskManagerNodes.size(),
+    // TODO: append new nodes to the hostfile
+
+    MPI_Comm_spawn(SENTINEL_CONF->WORKERMANAGER_EXECUTABLE, SENTINEL_CONF->CONFIGURATION_FILE, resourceAllocation.newWorkermanagerNodes,
                    info, 0, MPI_COMM_SELF, &taskManagerComm,
                    MPI_ERRCODES_IGNORE);
+
+    //Merge the mpi_comm and maintain it, to be able to talk to them?
+
     return true;
 }
 
 workmanager_id sentinel::job_manager::server::findMinLoad() {
-    auto min = *min_element(loadMap.begin(), loadMap.end(),[](const auto &l, const auto &r) { return l.second < r.second; });
+    auto min = *min_element(loadMap.begin(), loadMap.end(),[](auto &l, auto &r) { return l.second.num_tasks_queued_ < r.second.num_tasks_queued_; });
     return min.first;
 }
