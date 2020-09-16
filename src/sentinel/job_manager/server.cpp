@@ -78,9 +78,9 @@ bool sentinel::job_manager::Server::SpawnTaskManagers(ResourceAllocation &resour
     MPI_Info_set(info, "hostfile",
                  ""); //TODO: path to taskManager hosts (https://www.open-mpi.org/doc/current/man3/MPI_Comm_spawn.3.php)
 
-    MPI_Comm_spawn(taskManagerExecutable.c_str(), MPI_ARGV_NULL, clusterConfig.taskManagerNodes.size(),
-                   info, 0, MPI_COMM_SELF, &taskManagerComm,
-                   MPI_ERRCODES_IGNORE);
+//    MPI_Comm_spawn(taskManagerExecutable.c_str(), MPI_ARGV_NULL, clusterConfig.taskManagerNodes.size(),
+//                   info, 0, MPI_COMM_SELF, &taskManagerComm,
+//                   MPI_ERRCODES_IGNORE);
     return true;
 }
 
