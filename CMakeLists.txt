@@ -13,7 +13,7 @@ set(SENTINEL_COMMON include/sentinel/common/configuration_manager.h src/sentinel
         include/sentinel/common/enumerations.h include/sentinel/common/error_codes.h include/sentinel/common/error_definition.h
         include/sentinel/common/debug.h include/sentinel/common/daemon.h)
 
-set(SENTINEL_LIB ${SENTINEL_COMMON} src/sentinel/job_manager/client.cpp include/sentinel/job_manager/client.h src/sentinel/worker_manager/client.cpp include/sentinel/worker_manager/client.h)
+set(SENTINEL_LIB ${SENTINEL_COMMON} src/sentinel/lib/client.cpp include/sentinel/client.h src/sentinel/job_manager/client.cpp include/sentinel/job_manager/client.h include/sentinel/common/daemon.h)
 add_library(sentinel SHARED ${SENTINEL_LIB})
 
 target_link_libraries(sentinel ${LIBS})
@@ -23,7 +23,7 @@ add_executable(sentinel_job_manager ${SENTINEL_JOB_MANAGER})
 add_dependencies(sentinel_job_manager sentinel)
 target_link_libraries(sentinel_job_manager ${LIBS})
 
-set(SENTINEL_WORKER_MANAGER ${SENTINEL_COMMON} src/sentinel/worker_manager/main.cpp src/sentinel/worker_manager/server.cpp src/sentinel/worker_manager/server.h)
+set(SENTINEL_WORKER_MANAGER ${SENTINEL_COMMON} src/sentinel/worker_manager/main.cpp src/sentinel/worker_manager/server.cpp src/sentinel/worker_manager/server.h src/sentinel/worker_manager/client.cpp include/sentinel/worker_manager/client.h)
 add_executable(sentinel_worker_manager ${SENTINEL_WORKER_MANAGER})
 add_dependencies(sentinel_worker_manager sentinel)
 target_link_libraries(sentinel_worker_manager ${LIBS})
@@ -37,5 +37,3 @@ set(SENTINEL_MONITOR_SERVER ${SENTINEL_COMMON})
 add_executable(sentinel_monitor_server ${SENTINEL_MONITOR_SERVER} src/sentinel/monitor/server.cpp src/sentinel/monitor/server.h src/sentinel/monitor/main.cpp)
 target_link_libraries(sentinel_monitor_server ${LIBS})
 add_dependencies(sentinel_monitor_server sentinel)
-
-
