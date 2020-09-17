@@ -13,4 +13,4 @@ namespace sentinel::monitor {
 }
 
 
-#endif //RHEA_CLIENT_H
+#endif //SENTINEL_MONITOR_CLIENT_H
