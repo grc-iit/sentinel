@@ -7,7 +7,6 @@
 
 
 #include <basket/common/data_structures.h>
-#include <bits/stdint-uintn.h>
 #include <cstdint>
 #include <rpc/msgpack.hpp>
 
