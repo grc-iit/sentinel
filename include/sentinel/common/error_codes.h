@@ -2,8 +2,8 @@
 // Created by Jie on 8/28/20.
 //
 
-#ifndef COMMON_ERROR_CODES_H
-#define COMMON_ERROR_CODES_H
+#ifndef SENTINEL_COMMON_ERROR_CODES_H
+#define SENTINEL_COMMON_ERROR_CODES_H
 
 #include <sentinel/common/error_definition.h>
 
@@ -35,4 +35,4 @@ const ErrorCode INVALID_STORAGE_INDEX={1018, "Invalid storage index"};
 const ErrorCode UNDEFINED_ENV_VARIABLE = {2011, "The environment variable is not defined %s"};
 const ErrorCode NOT_FOUND_CLASS={3000, "Not found the requested class by class_id"};
 
-#endif //COMMON_ERROR_CODES_H
+#endif //SENTINEL_COMMON_ERROR_CODES_H

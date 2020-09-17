@@ -2,8 +2,8 @@
 // Created by mani on 9/14/2020.
 //
 
-#ifndef RHEA_DATA_STRUCTURES_H
-#define RHEA_DATA_STRUCTURES_H
+#ifndef SENTINEL_COMMON_DATA_STRUCTURES_H
+#define SENTINEL_COMMON_DATA_STRUCTURES_H
 
 
 #include <basket/common/data_structures.h>
@@ -175,4 +175,4 @@ namespace clmdep_msgpack {
 
 std::ostream &operator<<(std::ostream &os, Data &data);
 
-#endif //RHEA_DATA_STRUCTURES_H
+#endif //SENTINEL_COMMON_DATA_STRUCTURES_H
