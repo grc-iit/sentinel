@@ -4,3 +4,9 @@
 
 #include <sentinel/monitor/client.h>
 
+
+sentinel::monitor::client::client() {
+
+}
+
+

@@ -3,18 +3,14 @@
 //
 
 #include <sentinel/worker_manager/client.h>
-#include <basket/communication/rpc_factory.h>
-#include <rpc/client.h>
-#include <basket.h>
-#include <string>
 
-sentinel::worker_manager::Client::Client() {
+sentinel::worker_manager::Client::Client():server_rpc() {
     SENTINEL_CONF->ConfigureWorkermanagerClient();
     Init();
 }
 
 void sentinel::worker_manager::Client::Init() {
-    server_rpc = basket::Singleton<RPCFactory>::GetInstance()->GetRPC(BASKET_CONF->RPC_PORT);
+    this->server_rpc = basket::Singleton<RPCFactory>::GetInstance()->GetRPC(BASKET_CONF->RPC_PORT);
 }
 
 bool sentinel::worker_manager::Client::AssignTask(int server_index, int task_id) {
@@ -34,3 +30,4 @@ bool sentinel::worker_manager::Client::FinalizeWorkerManager(int server_index) {
 
 void sentinel::worker_manager::Client::Finalize() {
 }
+

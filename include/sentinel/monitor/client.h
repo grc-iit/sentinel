@@ -7,7 +7,8 @@
 
 namespace sentinel::monitor {
     class client {
-
+    public:
+        client();
     };
 }
 

@@ -13,15 +13,12 @@ void sentinel::job_manager::Server::RunInternal(std::future<void> futureObj) {
 
 bool sentinel::job_manager::Server::SubmitJob(uint32_t jobId){
     auto classLoader = ClassLoader();
-    job = classLoader.LoadJob(jobId);
-
+    job = classLoader.LoadClass<Job>(jobId);
     ResourceAllocation defaultResourceAllocation;
     /*
      * Generate default ResourceAllocation
      */
-
     SpawnTaskManagers(defaultResourceAllocation);
-
     /*
      * Something has to happen here with the dag
      */
