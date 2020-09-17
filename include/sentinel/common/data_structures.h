@@ -21,7 +21,7 @@ typedef struct Task{
     Task():links(){}
 
     void Execute(){
-        std::cout << "Test task's execute function...." << std::endl;
+        printf("Test task's execute function....\n");
     }
 }Task;
 

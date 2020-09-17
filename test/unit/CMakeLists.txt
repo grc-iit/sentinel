@@ -8,7 +8,7 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${INCLUDE_DIRS}")
 # Include directories
 include_directories(${CMAKE_SOURCE_DIR}/scs_io_common/include)
 
-SET(JOB_SRC ${CMAKE_SOURCE_DIR}/sentinel/test/unit/class_loader/rhea_job.cpp)
+set(JOB_SRC ${CMAKE_SOURCE_DIR}/sentinel/test/unit/class_loader/test_job_1.cpp)
 add_library(job SHARED ${JOB_SRC})
 add_dependencies(job scs_io_common)
 target_link_libraries(job -ldl)
