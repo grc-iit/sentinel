@@ -2,8 +2,8 @@
 // Created by mani on 9/14/2020.
 //
 
-#ifndef SENTINEL_CONFIGURATION_MANAGER_H
-#define SENTINEL_CONFIGURATION_MANAGER_H
+#ifndef SENTINEL_COMMON_CONFIGURATION_MANAGER_H
+#define SENTINEL_COMMON_CONFIGURATION_MANAGER_H
 
 #include <basket/common/singleton.h>
 #include <basket/common/typedefs.h>
@@ -208,4 +208,4 @@ namespace sentinel {
         }
     };
 }
-#endif //RHEA_CONFIGURATION_MANAGER_H
+#endif //SENTINEL_COMMON_CONFIGURATION_MANAGER_H

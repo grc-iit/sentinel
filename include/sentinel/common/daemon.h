@@ -2,8 +2,8 @@
 // Created by jaime on 9/16/20.
 //
 
-#ifndef COMMON_DAEMON_H
-#define COMMON_DAEMON_H
+#ifndef SENTINEL_COMMON_DAEMON_H
+#define SENTINEL_COMMON_DAEMON_H
 
 #include <fstream>
 #include <csignal>
@@ -120,4 +120,4 @@ namespace common {
     CharStruct common::Daemon<T>::main_log_file = "";
 }
 
-#endif //COMMON_DAEMON_H
+#endif //SENTINEL_COMMON_DAEMON_H
