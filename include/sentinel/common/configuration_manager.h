@@ -111,6 +111,8 @@ namespace sentinel {
         uint16_t JOBMANAGER_RPC_THREADS, WORKERMANAGER_RPC_THREADS;
         CharStruct JOBMANAGER_DIR, WORKERMANAGER_DIR;
         CharStruct CONFIGURATION_FILE;
+        CharStruct WORKERMANAGER_DINAMIC_HOSTFILE;
+        CharStruct WORKERMANAGER_EXECUTABLE;
         uint16_t JOBMANAGER_COUNT, WORKERMANAGER_COUNT;
         uint16_t RANDOM_SEED;
         uint16_t MAX_LOAD;
@@ -125,6 +127,8 @@ namespace sentinel {
                                  JOBMANAGER_DIR("/dev/shm/hari/single_node_jobmanager_server"), //TODO: CHECK if they have to be different
                                  WORKERMANAGER_DIR("/dev/shm/hari/single_node_workermanager_server"),
                                  CONFIGURATION_FILE("/home/user/sentinel/conf/base_rhea.conf"),
+                                 WORKERMANAGER_DINAMIC_HOSTFILE("/home/user/symbios/conf/server_lists/single_node_rhea_dyn_workermanager"),
+                                 WORKERMANAGER_EXECUTABLE("/home/user/symbios/build/workermanager_server"),
                                  JOBMANAGER_COUNT(1),
                                  WORKERMANAGER_COUNT(1),
                                  MAX_LOAD(0.8),
@@ -156,6 +160,8 @@ namespace sentinel {
             config(doc, "JOBMANAGER_DIR", JOBMANAGER_DIR);
             config(doc, "WORKERMANAGER_DIR", WORKERMANAGER_DIR);
             config(doc, "CONFIGURATION_FILE", CONFIGURATION_FILE);
+            config(doc, "WORKERMANAGER_DINAMIC_HOSTFILE", WORKERMANAGER_DINAMIC_HOSTFILE);
+            config(doc, "WORKERMANAGER_EXECUTABLE", WORKERMANAGER_EXECUTABLE);
             config(doc, "JOBMANAGER_COUNT", JOBMANAGER_COUNT);
             config(doc, "WORKERMANAGER_COUNT", WORKERMANAGER_COUNT);
             config(doc, "RANDOM_SEED", RANDOM_SEED);
