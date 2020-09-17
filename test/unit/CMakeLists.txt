@@ -22,3 +22,5 @@ add_executable(worker_manager_client_test_exec worker_manager/test.cpp)
 add_dependencies(worker_manager_client_test_exec scs_io_common sentinel)
 target_link_libraries(worker_manager_client_test_exec scs_io_common sentinel)
 
+add_test(NAME worker_manager_server_test COMMAND ${CMAKE_BINARY_DIR}/sentinel/sentinel_worker_manager)
+add_test(NAME worker_manager_client_test COMMAND ${CMAKE_CURRENT_BINARY_DIR}/worker_manager_client_test_exec)
