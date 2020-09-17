@@ -40,6 +40,10 @@ void sentinel::worker_manager::Server::Run(std::future<void> loop_cond) {
 }
 
 std::shared_ptr<sentinel::worker_manager::Worker> sentinel::worker_manager::Server::FindMinimumQueue(void) {
+    /**
+     * TODO: Dont ping the queues all the time. Maintain a reverse ordered_map datastructure and do a head on that
+     * Keep this operation O(1)
+     */
     std::shared_ptr<Worker> worker;
     int min_queue_size = std::numeric_limits<int>::max();
 
@@ -57,6 +61,12 @@ std::shared_ptr<sentinel::worker_manager::Worker> sentinel::worker_manager::Serv
 }
 
 int sentinel::worker_manager::Server::GetNumTasksQueued(void) {
+    /**
+     * TODO: Dont ping the queues all the time.
+     * Approach 1: Maintain a counter locally an atomic_int which can be updated
+     * Approach 2: also try keeping a array of size max threads for each thread this will avoid locking
+     * Check which is faster through quick benchmark. (my intuition is both should be fine)
+     */
     int num_tasks_queued = 0;
 
     for(Thread<Worker> &thread : pool_) {
@@ -122,6 +132,9 @@ void sentinel::worker_manager::Worker::ExecuteTask(int task_id) {
 }
 
 void sentinel::worker_manager::Worker::Run(std::future<void> loop_cond) {
+    /**
+     * TODO: avoid variables such as q_ please name is full.
+     */
     bool kill_if_empty = false;
     do {
         if(q_.size() == 0 && kill_if_empty) {
