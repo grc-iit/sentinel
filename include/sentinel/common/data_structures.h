@@ -47,6 +47,11 @@ typedef struct Job{
         return task_id_ + 1;
     }
 
+    uint32_t GetCollectorId(){
+        printf("Give me collector....\n");
+        return 1;
+    }
+
 }Job;
 
 
@@ -87,11 +92,10 @@ typedef struct WorkerManagerStats {
     WorkerManagerStats(const WorkerManagerStats &other): thrpt_kops_(other.thrpt_kops_), num_tasks_exec_(other.num_tasks_exec_), num_tasks_queued_(other.num_tasks_queued_) {}
     WorkerManagerStats(WorkerManagerStats &other):  thrpt_kops_(other.thrpt_kops_), num_tasks_exec_(other.num_tasks_exec_), num_tasks_queued_(other.num_tasks_queued_) {}
     /*Define Assignment Operator*/
-    WorkerManagerStats &operator=(const WorkerManagerStats &other){
-        thrpt_kops_ = other.thrpt_kops_;
-        num_tasks_exec_ = other.num_tasks_exec_;
-        num_tasks_queued_ = other.num_tasks_queued_;
-        return *this;
+    WorkerManagerStats &operator=(const WorkerManagerStats &other)= default;
+
+    bool operator<(const WorkerManagerStats &other) const{
+        return (num_tasks_queued_ < other.num_tasks_queued_);
     }
 } WorkerManagerStats;
 namespace clmdep_msgpack {
