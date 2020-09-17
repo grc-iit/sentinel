@@ -90,7 +90,6 @@ void sentinel::worker_manager::Server::UpdateJobManager() {
     double time_ms = epoch_timer_.endTime();
     int num_tasks_queued = GetNumTasksQueued();
     WorkerManagerStats wms(time_ms, num_tasks_assigned_, num_tasks_queued);
-    //TODO: Send worker manager stats to JobManager
     auto jm = basket::Singleton<sentinel::job_manager::client>::GetInstance();
     jm->UpdateWorkerManagerStats(rank_, wms);
     epoch_timer_.startTime();
@@ -139,9 +138,6 @@ void sentinel::worker_manager::Worker::ExecuteTask(int task_id) {
 }
 
 void sentinel::worker_manager::Worker::Run(std::future<void> loop_cond) {
-    /**
-     * TODO: avoid variables such as queue_ please name is full.
-     */
     bool kill_if_empty = false;
     do {
         if(queue_.size() == 0 && kill_if_empty) {
