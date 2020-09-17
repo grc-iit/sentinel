@@ -40,7 +40,7 @@ public:
     Server();
     void Init();
     void Run(std::future<void> loop_cond);
-    void AssignTask(int task_id);
+    void AssignTask(uint32_t task_id);
     void Terminate();
     void Finalize();
 };

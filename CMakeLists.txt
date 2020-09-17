@@ -37,3 +37,12 @@ set(SENTINEL_MONITOR_SERVER ${SENTINEL_COMMON})
 add_executable(sentinel_monitor_server ${SENTINEL_MONITOR_SERVER} src/sentinel/monitor/server.cpp src/sentinel/monitor/server.h src/sentinel/monitor/main.cpp)
 target_link_libraries(sentinel_monitor_server ${LIBS})
 add_dependencies(sentinel_monitor_server sentinel)
+
+
+# Enable tests
+option(BUILD_TEST "Build the unit tests" ON)
+if(BUILD_TEST)
+    enable_testing()
+    include(CTest)
+    add_subdirectory(test/unit)
+endif()

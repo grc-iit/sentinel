@@ -25,14 +25,13 @@ sentinel::worker_manager::Server::Server() {
 void sentinel::worker_manager::Server::Init() {
     client_rpc_ = basket::Singleton<RPCFactory>::GetInstance()->GetRPC(BASKET_CONF->RPC_PORT);
 
-    auto functionAssignTask(
-    std::bind(&sentinel::worker_manager::Server::AssignTask, this, std::placeholders::_1));
+    std::function<void(uint32_t)> functionAssignTask(std::bind(&sentinel::worker_manager::Server::AssignTask, this, std::placeholders::_1));
     client_rpc_->bind("AssignTask", functionAssignTask);
 
-    auto functionTerminateWorkerManager(std::bind(&sentinel::worker_manager::Server::Terminate, this));
+    std::function<void(void)> functionTerminateWorkerManager(std::bind(&sentinel::worker_manager::Server::Terminate, this));
     client_rpc_->bind("TerminateWorkerManager", functionTerminateWorkerManager);
 
-    auto functionFinalizeWorkerManager(std::bind(&sentinel::worker_manager::Server::Finalize, this));
+    std::function<void(void)>  functionFinalizeWorkerManager(std::bind(&sentinel::worker_manager::Server::Finalize, this));
     client_rpc_->bind("FinalizeWorkerManager", functionFinalizeWorkerManager);
 }
 
@@ -81,7 +80,7 @@ void sentinel::worker_manager::Server::UpdateJobManager() {
     //TODO: Send worker manager stats to JobManager
 }
 
-void sentinel::worker_manager::Server::AssignTask(int task_id) {
+void sentinel::worker_manager::Server::AssignTask(uint32_t task_id) {
     //Spawn a new thread if there are any available in the pool
     if(pool_.Size() < pool_.MaxSize()) {
         pool_.Assign();
