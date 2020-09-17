@@ -22,5 +22,10 @@ add_executable(worker_manager_client_test_exec worker_manager/test.cpp)
 add_dependencies(worker_manager_client_test_exec scs_io_common sentinel)
 target_link_libraries(worker_manager_client_test_exec scs_io_common sentinel)
 
-add_test(NAME worker_manager_server_test COMMAND ${CMAKE_BINARY_DIR}/sentinel/sentinel_worker_manager)
-add_test(NAME worker_manager_client_test COMMAND ${CMAKE_CURRENT_BINARY_DIR}/worker_manager_client_test_exec)
+add_test(NAME worker_manager_server_test COMMAND ${CMAKE_BINARY_DIR}/sentinel/sentinel_worker_manager ${CMAKE_SOURCE_DIR}/sentinel/conf/sentinel_conf.json)
+set_property(TEST worker_manager_server_test APPEND PROPERTY ENVIRONMENT "CMAKE_SOURCE_DIR=${CMAKE_SOURCE_DIR}")
+set_property(TEST worker_manager_server_test APPEND PROPERTY ENVIRONMENT "CMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}")
+
+add_test(NAME worker_manager_client_test COMMAND ${CMAKE_CURRENT_BINARY_DIR}/worker_manager_client_test_exec ${CMAKE_SOURCE_DIR}/sentinel/conf/sentinel_conf.json)
+set_property(TEST worker_manager_client_test APPEND PROPERTY ENVIRONMENT "CMAKE_SOURCE_DIR=${CMAKE_SOURCE_DIR}")
+set_property(TEST worker_manager_client_test APPEND PROPERTY ENVIRONMENT "CMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}")
