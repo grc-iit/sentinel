@@ -117,12 +117,12 @@ namespace sentinel {
         uint16_t RANDOM_SEED;
         uint16_t MAX_LOAD;
         ResourceAllocation DEFAULT_RESOURCE_ALLOCATION;
-        std::vector<CharStruct> WORKERMANAGER_LISTS;
+//        std::vector<CharStruct> WORKERMANAGER_LISTS;
 
 
         ConfigurationManager() : JOBMANAGER_LISTS("/home/user/symbios/conf/server_lists/single_node_rhea_jobmanager"),
                                  WORKERMANAGER_HOST_FILE("/home/user/symbios/conf/server_lists/single_node_rhea_workermanager"),
-                                 WORKERMANAGER_LISTS(),
+//                                 WORKERMANAGER_LISTS(),
                                  JOBMANAGER_PORT(8000),
                                  WORKERMANAGER_PORT(9000),
                                  JOBMANAGER_RPC_THREADS(4),
@@ -156,7 +156,7 @@ namespace sentinel {
                 exit(EXIT_FAILURE);
             }
             config(doc, "JOBMANAGER_LISTS", JOBMANAGER_LISTS);
-            config(doc, "WORKERMANAGER_LISTS", WORKERMANAGER_LISTS);
+            config(doc, "WORKERMANAGER_HOST_FILE", WORKERMANAGER_HOST_FILE);
             config(doc, "JOBMANAGER_PORT", JOBMANAGER_PORT);
             config(doc, "WORKERMANAGER_PORT", WORKERMANAGER_PORT);
             config(doc, "JOBMANAGER_RPC_THREADS", JOBMANAGER_RPC_THREADS);
@@ -193,7 +193,7 @@ namespace sentinel {
 
         void ConfigureWorkermanagerClient() {
             LoadConfiguration();
-            BASKET_CONF->ConfigureDefaultClient(WORKERMANAGER_LISTS.c_str());
+            BASKET_CONF->ConfigureDefaultClient(WORKERMANAGER_HOST_FILE.c_str());
             BASKET_CONF->RPC_PORT = WORKERMANAGER_PORT;
         }
 
@@ -202,7 +202,7 @@ namespace sentinel {
             BASKET_CONF->RPC_THREADS = WORKERMANAGER_RPC_THREADS;
             BASKET_CONF->MEMORY_ALLOCATED = 1024ULL * 1024ULL * 1ULL;
             BASKET_CONF->BACKED_FILE_DIR=WORKERMANAGER_DIR;
-            BASKET_CONF->ConfigureDefaultServer(WORKERMANAGER_LISTS.c_str());
+            BASKET_CONF->ConfigureDefaultServer(WORKERMANAGER_HOST_FILE.c_str());
             WORKERMANAGER_COUNT = BASKET_CONF->NUM_SERVERS;
             BASKET_CONF->RPC_PORT = WORKERMANAGER_PORT;
         }
