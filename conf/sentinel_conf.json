@@ -1,0 +1,15 @@
+{
+  "JOBMANAGER_LISTS": "${CMAKE_SOURCE_DIR}/sentinel/conf/hostfile",
+  "WORKERMANAGER_HOST_FILE" : "${CMAKE_SOURCE_DIR}/sentinel/conf/hostfile",
+  "JOBMANAGER_PORT": 8000,
+  "WORKERMANAGER_PORT": 9000,
+  "JOBMANAGER_RPC_THREADS": 4,
+  "WORKERMANAGER_RPC_THREADS": 4,
+  "JOBMANAGER_DIR": "/dev/shm/${USER}/single_node_jobmanager_server",
+  "WORKERMANAGER_DIR": "/dev/shm/${USER}/single_node_workermanager_server",
+  "WORKERMANAGER_EXECUTABLE": "${CMAKE_BINARY_DIR}/sentinel/worker_manager",
+  "JOBMANAGER_COUNT": 1,
+  "WORKERMANAGER_COUNT": 1,
+  "MAX_LOAD": 0.8,
+  "RANDOM_SEED": 100
+}

@@ -79,9 +79,9 @@ typedef struct WorkerManagerStats {
     uint32_t num_tasks_queued_;
     WorkerManagerStats():thrpt_kops_(0),num_tasks_exec_(0),num_tasks_queued_(0){}
     WorkerManagerStats(double epoch_time, int num_tasks_assigned, int num_tasks_queued) {
-        thrpt_kops_ = num_tasks_exec_ / epoch_time;
         num_tasks_exec_ = num_tasks_assigned - num_tasks_queued;
         num_tasks_queued_ = num_tasks_queued;
+        thrpt_kops_ = num_tasks_exec_ / epoch_time;
     }
     /*Define the default, copy and move constructor*/
     WorkerManagerStats(const WorkerManagerStats &other): thrpt_kops_(other.thrpt_kops_), num_tasks_exec_(other.num_tasks_exec_), num_tasks_queued_(other.num_tasks_queued_) {}
