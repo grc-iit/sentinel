@@ -72,6 +72,39 @@ namespace sentinel {
             variable = CharStruct(replaceEnvVariable(temp_variable));
         }
 
+        std::vector<CharStruct> LoadServers(std::vector<CharStruct> SERVER_LIST, CharStruct SERVER_LIST_PATH){
+            SERVER_LIST=std::vector<CharStruct>();
+            fstream file;
+            file.open(SERVER_LIST_PATH.c_str(), ios::in);
+            if (file.is_open()) {
+                std::string file_line;
+
+                int count;
+                while (getline(file, file_line)) {
+                    CharStruct server_node_name;
+                    if (!file_line.empty()) {
+                        int split_loc = file_line.find(':');  // split to node and net
+                        if (split_loc != std::string::npos) {
+                            server_node_name = file_line.substr(0, split_loc);
+                            count = atoi(file_line.substr(split_loc+1, std::string::npos).c_str());
+                        } else {
+                            // no special network
+                            server_node_name=file_line;
+                            count = 1;
+                        }
+                        // server list is list of network interfaces
+                        for(int i=0;i<count;++i){
+                            SERVER_LIST.emplace_back(server_node_name);
+                        }
+                    }
+                }
+            } else {
+                printf("Error: Can't open server list file %s\n", SERVER_LIST_PATH.c_str());
+            }
+            file.close();
+            return SERVER_LIST;
+        }
+
         int CountServers(CharStruct server_list_path) {
             fstream file;
             int total = 0;
@@ -106,7 +139,7 @@ namespace sentinel {
         }
 
     public:
-        CharStruct JOBMANAGER_LISTS, WORKERMANAGER_HOST_FILE;
+        CharStruct JOBMANAGER_HOST_FILE, WORKERMANAGER_HOST_FILE;
         uint16_t JOBMANAGER_PORT, WORKERMANAGER_PORT;
         uint16_t JOBMANAGER_RPC_THREADS, WORKERMANAGER_RPC_THREADS;
         CharStruct JOBMANAGER_DIR, WORKERMANAGER_DIR;
@@ -117,10 +150,10 @@ namespace sentinel {
         uint16_t RANDOM_SEED;
         uint16_t MAX_LOAD;
         ResourceAllocation DEFAULT_RESOURCE_ALLOCATION;
-//        std::vector<CharStruct> WORKERMANAGER_LISTS;
+        std::vector<CharStruct> WORKERMANAGER_LISTS;
 
 
-        ConfigurationManager() : JOBMANAGER_LISTS("/home/user/symbios/conf/server_lists/single_node_rhea_jobmanager"),
+        ConfigurationManager() : JOBMANAGER_HOST_FILE("/home/user/symbios/conf/server_lists/single_node_rhea_jobmanager"),
                                  WORKERMANAGER_HOST_FILE("/home/user/symbios/conf/server_lists/single_node_rhea_workermanager"),
 //                                 WORKERMANAGER_LISTS(),
                                  JOBMANAGER_PORT(8000),
@@ -155,7 +188,7 @@ namespace sentinel {
                 fclose(outfile);
                 exit(EXIT_FAILURE);
             }
-            config(doc, "JOBMANAGER_LISTS", JOBMANAGER_LISTS);
+            config(doc, "JOBMANAGER_HOST_FILE", JOBMANAGER_HOST_FILE);
             config(doc, "WORKERMANAGER_HOST_FILE", WORKERMANAGER_HOST_FILE);
             config(doc, "JOBMANAGER_PORT", JOBMANAGER_PORT);
             config(doc, "WORKERMANAGER_PORT", WORKERMANAGER_PORT);
@@ -177,7 +210,7 @@ namespace sentinel {
 
         void ConfigureJobmanagerClient() {
             LoadConfiguration();
-            BASKET_CONF->ConfigureDefaultClient(JOBMANAGER_LISTS.c_str());
+            BASKET_CONF->ConfigureDefaultClient(JOBMANAGER_HOST_FILE.c_str());
             BASKET_CONF->RPC_PORT = JOBMANAGER_PORT;
         }
 
@@ -186,7 +219,8 @@ namespace sentinel {
             BASKET_CONF->RPC_THREADS = JOBMANAGER_RPC_THREADS;
             BASKET_CONF->MEMORY_ALLOCATED = 1024ULL * 1024ULL * 1ULL;
             BASKET_CONF->BACKED_FILE_DIR=JOBMANAGER_DIR;
-            BASKET_CONF->ConfigureDefaultServer(JOBMANAGER_LISTS.c_str());
+            BASKET_CONF->ConfigureDefaultServer(JOBMANAGER_HOST_FILE.c_str());
+            LoadServers(WORKERMANAGER_LISTS, WORKERMANAGER_HOST_FILE);
             JOBMANAGER_COUNT = BASKET_CONF->NUM_SERVERS;
             BASKET_CONF->RPC_PORT = JOBMANAGER_PORT;
         }
