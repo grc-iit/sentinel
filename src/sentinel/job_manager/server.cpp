@@ -79,7 +79,7 @@ bool sentinel::job_manager::Server::SpawnTaskManagers(ResourceAllocation &resour
 
     // TODO: append new nodes to the hostfile
 
-    MPI_Comm_spawn(SENTINEL_CONF->WORKERMANAGER_EXECUTABLE.c_str(), spawn_argv, resourceAllocation.numNewWorkermanager,
+    MPI_Comm_spawn(SENTINEL_CONF->WORKERMANAGER_EXECUTABLE.c_str(), spawn_argv, resourceAllocation.num_nodes_,
                    info, 0, MPI_COMM_SELF, &taskManagerComm,
                    MPI_ERRCODES_IGNORE);
 

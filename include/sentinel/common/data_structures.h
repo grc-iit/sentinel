@@ -52,26 +52,17 @@ typedef struct Job{
 
 typedef struct ResourceAllocation {
 
-    CharStruct newWorkermanagerNodes; // for file io, the "id_" is the filename; for object store io, the "id_" is the key.
-    uint16_t numNewWorkermanager;
     uint16_t num_nodes_;
     uint16_t num_procs_per_node;
     uint16_t num_threads_per_proc;
 
     /*Define the default, copy and move constructor*/
-    ResourceAllocation(): newWorkermanagerNodes(), numNewWorkermanager(0){}
-    ResourceAllocation(const ResourceAllocation &other): newWorkermanagerNodes(other.newWorkermanagerNodes),
-                                                         numNewWorkermanager(other.numNewWorkermanager){}
-    ResourceAllocation(ResourceAllocation &other): newWorkermanagerNodes(other.newWorkermanagerNodes),
-                                                   numNewWorkermanager(other.numNewWorkermanager){}
     ResourceAllocation(): num_nodes_(), num_procs_per_node(0), num_threads_per_proc(){}
     ResourceAllocation(const ResourceAllocation &other): num_nodes_(other.num_nodes_), num_procs_per_node(other.num_procs_per_node), num_threads_per_proc(other.num_threads_per_proc){}
     ResourceAllocation(ResourceAllocation &other): num_nodes_(other.num_nodes_), num_procs_per_node(other.num_procs_per_node), num_threads_per_proc(other.num_threads_per_proc){}
 
     /*Define Assignment Operator*/
     ResourceAllocation &operator=(const ResourceAllocation &other){
-        newWorkermanagerNodes = other.newWorkermanagerNodes;
-        numNewWorkermanager = other.numNewWorkermanager;
         num_nodes_ = other.num_nodes_;
         num_procs_per_node = other.num_procs_per_node;
         num_threads_per_proc = other.num_threads_per_proc;
