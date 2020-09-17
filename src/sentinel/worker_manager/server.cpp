@@ -135,6 +135,7 @@ int sentinel::worker_manager::Worker::GetTask() {
 }
 
 void sentinel::worker_manager::Worker::ExecuteTask(int task_id) {
+    std::cout << "Execute " << task_id << std::endl;
 }
 
 void sentinel::worker_manager::Worker::Run(std::future<void> loop_cond) {
