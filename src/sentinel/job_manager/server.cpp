@@ -102,6 +102,9 @@ bool sentinel::job_manager::Server::SpawnWorkerManagers(ResourceAllocation &reso
 }
 
 workmanager_id sentinel::job_manager::Server::FindMinLoad() {
+    /**
+     * TODO:this changes to the order 1 code.
+     */
     auto min = *min_element(loadMap.begin(), loadMap.end(),[](const auto &l, const auto &r) { return l.second.num_tasks_queued_ < r.second.num_tasks_queued_; });
     return min.first;
 }
