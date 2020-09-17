@@ -17,3 +17,8 @@ target_link_libraries(job -ldl)
 add_executable(class_loader_test ../../../sentinel/test/unit/class_loader/test.cpp)
 add_dependencies(class_loader_test scs_io_common)
 target_link_libraries(class_loader_test scs_io_common -ldl)
+
+add_executable(worker_manager_client_test_exec worker_manager/test.cpp)
+add_dependencies(worker_manager_client_test_exec scs_io_common sentinel)
+target_link_libraries(worker_manager_client_test_exec scs_io_common sentinel)
+

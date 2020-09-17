@@ -6,6 +6,8 @@
 #include "thread_pool.h"
 #include <basket/common/configuration_manager.h>
 #include <sentinel/common/configuration_manager.h>
+#include <sentinel/job_manager/client.h>
+#include <basket/common/singleton.h>
 #include <basket/communication/rpc_factory.h>
 #include <rpc/client.h>
 #include <basket.h>
@@ -19,7 +21,8 @@
 sentinel::worker_manager::Server::Server() {
     SENTINEL_CONF->ConfigureWorkermanagerServer();
     Init();
-    t_.startTime();
+    epoch_timer_.startTime();
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank_);
 }
 
 void sentinel::worker_manager::Server::Init() {
@@ -84,10 +87,13 @@ bool sentinel::worker_manager::Server::ReadyToUpdateJobManager() {
 }
 
 void sentinel::worker_manager::Server::UpdateJobManager() {
-    double time_ms = t_.endTime();
+    double time_ms = epoch_timer_.endTime();
     int num_tasks_queued = GetNumTasksQueued();
-    //WorkerManagerStats wms(time_ms, num_tasks_assigned_, num_tasks_queued);
+    WorkerManagerStats wms(time_ms, num_tasks_assigned_, num_tasks_queued);
     //TODO: Send worker manager stats to JobManager
+    auto jm = basket::Singleton<sentinel::job_manager::client>::GetInstance();
+    jm->UpdateWorkerManagerStats(rank_, wms);
+    epoch_timer_.startTime();
 }
 
 void sentinel::worker_manager::Server::AssignTask(uint32_t task_id) {
@@ -123,8 +129,8 @@ sentinel::worker_manager::Worker::Worker() {
 }
 
 int sentinel::worker_manager::Worker::GetTask() {
-    int task_id = q_.front();
-    q_.pop_front();
+    int task_id = queue_.front();
+    queue_.pop_front();
     return task_id;
 }
 
@@ -133,14 +139,14 @@ void sentinel::worker_manager::Worker::ExecuteTask(int task_id) {
 
 void sentinel::worker_manager::Worker::Run(std::future<void> loop_cond) {
     /**
-     * TODO: avoid variables such as q_ please name is full.
+     * TODO: avoid variables such as queue_ please name is full.
      */
     bool kill_if_empty = false;
     do {
-        if(q_.size() == 0 && kill_if_empty) {
+        if(queue_.size() == 0 && kill_if_empty) {
             return;
         }
-        while (q_.size() > 0) {
+        while (queue_.size() > 0) {
             ExecuteTask(GetTask());
         }
         kill_if_empty = true;
@@ -149,9 +155,9 @@ void sentinel::worker_manager::Worker::Run(std::future<void> loop_cond) {
 }
 
 void sentinel::worker_manager::Worker::Enqueue(int task_id) {
-    q_.emplace_back(task_id);
+    queue_.emplace_back(task_id);
 }
 
 int sentinel::worker_manager::Worker::GetQueueDepth() {
-    return q_.size();
+    return queue_.size();
 }

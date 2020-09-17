@@ -7,7 +7,7 @@ include_directories(src)
 include_directories(include)
 include_directories(${CMAKE_SOURCE_DIR}/scs_io_common/include)
 
-set(LIBS -lpthread -lbasket -lrpc  -lboost_system -lboost_filesystem -lmpi -ldl -L${CMAKE_BINARY_DIR}/scs_io_common -lscs_io_common)
+set(LIBS -lpthread -lbasket -lrpc  -lboost_system -lboost_filesystem -lmpi -L${CMAKE_BINARY_DIR}/scs_io_common -lscs_io_common -ldl)
 
 set(SENTINEL_COMMON include/sentinel/common/configuration_manager.h include/sentinel/common/data_structures.h
         include/sentinel/common/enumerations.h include/sentinel/common/error_codes.h include/sentinel/common/error_definition.h
@@ -26,7 +26,7 @@ target_link_libraries(sentinel_job_manager ${LIBS})
 set(SENTINEL_WORKER_MANAGER ${SENTINEL_COMMON} src/sentinel/worker_manager/main.cpp src/sentinel/worker_manager/server.cpp src/sentinel/worker_manager/server.h)
 add_executable(sentinel_worker_manager ${SENTINEL_WORKER_MANAGER})
 add_dependencies(sentinel_worker_manager sentinel)
-target_link_libraries(sentinel_worker_manager ${LIBS})
+target_link_libraries(sentinel_worker_manager sentinel ${LIBS})
 
 set(SENTINEL_MONITOR_LIB ${SENTINEL_COMMON} src/sentinel/monitor/client.cpp include/sentinel/monitor/client.h)
 add_library(sentinel_monitor SHARED ${SENTINEL_MONITOR_LIB})
