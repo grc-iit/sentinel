@@ -14,18 +14,23 @@ void sentinel::job_manager::Server::RunInternal(std::future<void> futureObj) {
 bool sentinel::job_manager::Server::SubmitJob(uint32_t jobId){
     auto classLoader = ClassLoader();
     job = classLoader.LoadClass<Job>(jobId);
-    ResourceAllocation defaultResourceAllocation;
+    ResourceAllocation defaultResourceAllocation = SENTINEL_CONF->DEFAULT_RESOURCE_ALLOCATION;
     /*
      * Generate default ResourceAllocation
      */
-    SpawnTaskManagers(defaultResourceAllocation);
+    SpawnWorkerManagers(defaultResourceAllocation);
     /*
      * Something has to happen here with the dag
+     */
+    /**
+     * TODO: allocate the first node source to the allocated worker manager.
+     *
      */
 
 }
 
 bool sentinel::job_manager::Server::UpdateWorkerManagerStats(uint32_t workerManagerId, WorkerManagerStats &stats){
+
     auto possible_load = loadMap.find(workerManagerId);
     if (possible_load == loadMap.end()) loadMap.insert(std::pair<workmanager_id, WorkerManagerStats>(workerManagerId, stats));
     else possible_load->second = stats;
@@ -39,6 +44,9 @@ std::pair<bool, WorkerManagerStats> sentinel::job_manager::Server::GetWorkerMana
 }
 
 std::pair<workmanager_id, task_id> sentinel::job_manager::Server::GetNextNode(uint32_t currentTaskId){
+    /**
+     * use ordered_map to do O(1) traversal to get the least node load.
+     */
     auto possible_destination = destinationMap.find(currentTaskId);
     workmanager_id currentWorkermanagerId = possible_destination->second.first;
     //If we dont have a current destination, or the destination is over a certain fullness
@@ -62,13 +70,20 @@ std::pair<workmanager_id, task_id> sentinel::job_manager::Server::GetNextNode(ui
 }
 
 bool sentinel::job_manager::Server::ChangeResourceAllocation(ResourceAllocation &resourceAllocation){
-    return SpawnTaskManagers(resourceAllocation);
+    return SpawnWorkerManagers(resourceAllocation);
 }
 
-bool sentinel::job_manager::Server::SpawnTaskManagers(ResourceAllocation &resourceAllocation) {
+bool sentinel::job_manager::Server::SpawnWorkerManagers(ResourceAllocation &resourceAllocation) {
     MPI_Comm taskManagerComm;
     MPI_Info info;
     MPI_Info_create(&info);
+    /**
+     * TODO: Maintain current node , proc within node and thread index within Server class
+     * - On allocate u calculate the nodes based on list and given allocation size.
+     * - Build a list of hosts and then call the mpi spawn.
+     */
+
+
     MPI_Info_set(info, "hostfile", SENTINEL_CONF->WORKERMANAGER_DINAMIC_HOSTFILE.c_str());
 
     char** spawn_argv = static_cast<char **>(malloc(1 * sizeof(char *)));

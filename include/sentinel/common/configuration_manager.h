@@ -106,7 +106,7 @@ namespace sentinel {
         }
 
     public:
-        CharStruct JOBMANAGER_LISTS, WORKERMANAGER_LISTS;
+        CharStruct JOBMANAGER_LISTS, WORKERMANAGER_HOST_FILE;
         uint16_t JOBMANAGER_PORT, WORKERMANAGER_PORT;
         uint16_t JOBMANAGER_RPC_THREADS, WORKERMANAGER_RPC_THREADS;
         CharStruct JOBMANAGER_DIR, WORKERMANAGER_DIR;
@@ -116,14 +116,18 @@ namespace sentinel {
         uint16_t JOBMANAGER_COUNT, WORKERMANAGER_COUNT;
         uint16_t RANDOM_SEED;
         uint16_t MAX_LOAD;
+        ResourceAllocation DEFAULT_RESOURCE_ALLOCATION;
+        std::vector<CharStruct> WORKERMANAGER_LISTS;
 
 
         ConfigurationManager() : JOBMANAGER_LISTS("/home/user/symbios/conf/server_lists/single_node_rhea_jobmanager"),
-                                 WORKERMANAGER_LISTS("/home/user/symbios/conf/server_lists/single_node_rhea_workermanager"),
+                                 WORKERMANAGER_HOST_FILE("/home/user/symbios/conf/server_lists/single_node_rhea_workermanager"),
+                                 WORKERMANAGER_LISTS(),
                                  JOBMANAGER_PORT(8000),
                                  WORKERMANAGER_PORT(9000),
                                  JOBMANAGER_RPC_THREADS(4),
                                  WORKERMANAGER_RPC_THREADS(4),
+                                 DEFAULT_RESOURCE_ALLOCATION(1,1,1),
                                  JOBMANAGER_DIR("/dev/shm/hari/single_node_jobmanager_server"), //TODO: CHECK if they have to be different
                                  WORKERMANAGER_DIR("/dev/shm/hari/single_node_workermanager_server"),
                                  CONFIGURATION_FILE("/home/user/sentinel/conf/base_rhea.conf"),

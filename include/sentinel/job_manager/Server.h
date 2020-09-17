@@ -26,9 +26,14 @@ namespace sentinel::job_manager{
         std::unordered_map<workmanager_id, WorkerManagerStats> loadMap;
         std::unordered_map<workmanager_id, std::vector<task_id>> taskMap;
         std::unordered_map<task_id, std::pair<workmanager_id, task_id>> destinationMap;
+        /**
+         * TODO: have a reverse ordered_map by load
+         * - when u update the stats u also update this map.
+         * - One Next task u just refer directly to this map and not iterate.
+         */
         std::shared_ptr<Job> job;
         workmanager_id FindMinLoad();
-        bool SpawnTaskManagers(ResourceAllocation &resourceAllocation);
+        bool SpawnWorkerManagers(ResourceAllocation &resourceAllocation);
 
         void RunInternal(std::future<void> futureObj);
     public:
