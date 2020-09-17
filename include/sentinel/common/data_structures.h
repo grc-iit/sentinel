@@ -92,7 +92,6 @@ typedef struct WorkerManagerStats {
         return *this;
     }
 } WorkerManagerStats;
-
 namespace clmdep_msgpack {
     MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
             namespace adaptor {
@@ -169,6 +168,7 @@ namespace clmdep_msgpack {
             }  // namespace adaptor
     }
 }  // namespace clmdep_msgpack
+
 
 
 std::ostream &operator<<(std::ostream &os, Data &data);

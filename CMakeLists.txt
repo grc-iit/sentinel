@@ -1,17 +1,19 @@
 cmake_minimum_required(VERSION 3.10)
 project(sentinel VERSION 1.0.0 DESCRIPTION "")
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w -g -DBASKET_ENABLE_RPCLIB")
 
 include_directories(src)
 include_directories(include)
 include_directories(${CMAKE_SOURCE_DIR}/scs_io_common/include)
+
 set(LIBS -lpthread -lbasket -lrpc  -lboost_system -lboost_filesystem -lmpi ${CMAKE_BINARY_DIR}/scs_io_common/libscs_io_common.so)
 
 set(SENTINEL_COMMON include/sentinel/common/configuration_manager.h include/sentinel/common/data_structures.h
         include/sentinel/common/enumerations.h include/sentinel/common/error_codes.h include/sentinel/common/error_definition.h
         include/sentinel/common/debug.h include/sentinel/common/daemon.h)
 
-set(SENTINEL_LIB ${SENTINEL_COMMON} src/sentinel/lib/client.cpp include/sentinel/client.h src/sentinel/job_manager/client.cpp include/sentinel/job_manager/client.h include/sentinel/common/daemon.h)
+set(SENTINEL_LIB ${SENTINEL_COMMON} src/sentinel/job_manager/client.cpp include/sentinel/job_manager/client.h src/sentinel/worker_manager/client.cpp include/sentinel/worker_manager/client.h)
 add_library(sentinel SHARED ${SENTINEL_LIB})
 
 target_link_libraries(sentinel ${LIBS})
@@ -21,7 +23,7 @@ add_executable(sentinel_job_manager ${SENTINEL_JOB_MANAGER})
 add_dependencies(sentinel_job_manager sentinel)
 target_link_libraries(sentinel_job_manager ${LIBS})
 
-set(SENTINEL_WORKER_MANAGER ${SENTINEL_COMMON} src/sentinel/worker_manager/main.cpp src/sentinel/worker_manager/server.cpp src/sentinel/worker_manager/server.h src/sentinel/worker_manager/client.cpp include/sentinel/worker_manager/client.h)
+set(SENTINEL_WORKER_MANAGER ${SENTINEL_COMMON} src/sentinel/worker_manager/main.cpp src/sentinel/worker_manager/server.cpp src/sentinel/worker_manager/server.h)
 add_executable(sentinel_worker_manager ${SENTINEL_WORKER_MANAGER})
 add_dependencies(sentinel_worker_manager sentinel)
 target_link_libraries(sentinel_worker_manager ${LIBS})

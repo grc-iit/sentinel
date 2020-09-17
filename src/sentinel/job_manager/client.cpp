@@ -4,8 +4,6 @@
 
 #include <sentinel/job_manager/client.h>
 
-//AUTO_TRACER("sentinel::job_manager::client::SubmitJob", request);
-//COMMON_DBGVAR(num_servers);
 sentinel::job_manager::client::client(){
     SENTINEL_CONF->ConfigureJobmanagerClient();
     auto basket=BASKET_CONF;

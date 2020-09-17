@@ -2,8 +2,8 @@
 // Created by mani on 9/14/2020.
 //
 
-#ifndef RHEA_CLIENT_H
-#define RHEA_CLIENT_H
+#ifndef SENTINEL_JOBMANAGER_CLIENT_H
+#define SENTINEL_JOBMANAGER_CLIENT_H
 
 #include <mpi.h>
 #include <basket/communication/rpc_lib.h>
@@ -30,4 +30,4 @@ namespace sentinel::job_manager {
 }
 
 
-#endif //RHEA_CLIENT_H
+#endif //RHEA_JOBMANAGER_CLIENT_H
