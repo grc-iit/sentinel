@@ -14,7 +14,7 @@ namespace sentinel::worker_manager {
 
 class Worker {
 private:
-    std::list<int> q_;
+    std::list<int> queue_;
 private:
     int GetTask();
     void ExecuteTask(int task_id);
@@ -30,7 +30,9 @@ private:
     sentinel::ThreadPool<Worker> pool_;
     std::shared_ptr<RPC> client_rpc_;
     int num_tasks_assigned_ = 0, min_tasks_assigned_update_ = 512;
-    common::debug::Timer t_;
+    common::debug::Timer epoch_timer_;
+    uint32_t epoch_usec_ = 1000;
+    int rank_ = 0;
 private:
     bool ReadyToUpdateJobManager();
     void UpdateJobManager();
