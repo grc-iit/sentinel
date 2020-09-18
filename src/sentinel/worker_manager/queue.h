@@ -2,8 +2,8 @@
 // Created by lukemartinlogan on 9/3/20.
 //
 
-#ifndef SENTINEL_DOUBLE_BUFFER_H
-#define SENTINEL_DOUBLE_BUFFER_H
+#ifndef SENTINEL_QUEUE_H
+#define SENTINEL_QUEUE_H
 
 #include <common/debug.h>
 #include <thread>
@@ -43,4 +43,4 @@ public:
 };
 
 }
-#endif //SENTINEL_DOUBLE_BUFFER_H
+#endif //SENTINEL_QUEUE_H

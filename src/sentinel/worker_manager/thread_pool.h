@@ -2,8 +2,8 @@
 // Created by lukemartinlogan on 9/16/20.
 //
 
-#ifndef RHEA_THREAD_POOL_H
-#define RHEA_THREAD_POOL_H
+#ifndef SENTINEL_THREAD_POOL_H
+#define SENTINEL_THREAD_POOL_H
 
 #include <list>
 #include <vector>
@@ -142,4 +142,4 @@ public:
 };
 
 }
-#endif //RHEA_THREAD_POOL_H
+#endif //SENTINEL_THREAD_POOL_H
