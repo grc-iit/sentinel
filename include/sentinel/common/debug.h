@@ -223,4 +223,4 @@ private:
 }
 
 
-#endif //DEBUG_DEBUG_H
+#endif //COMMON_DEBUG_PROJECT_H

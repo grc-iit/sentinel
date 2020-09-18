@@ -2,8 +2,8 @@
 // Created by mani on 9/14/2020.
 //
 
-#ifndef SENTINEL_CONFIGURATION_MANAGER_H
-#define SENTINEL_CONFIGURATION_MANAGER_H
+#ifndef SENTINEL_COMMON_CONFIGURATION_MANAGER_H
+#define SENTINEL_COMMON_CONFIGURATION_MANAGER_H
 
 #include <basket/common/singleton.h>
 #include <basket/common/typedefs.h>
@@ -72,6 +72,39 @@ namespace sentinel {
             variable = CharStruct(replaceEnvVariable(temp_variable));
         }
 
+        std::vector<CharStruct> LoadServers(std::vector<CharStruct> SERVER_LIST, CharStruct SERVER_LIST_PATH){
+            SERVER_LIST=std::vector<CharStruct>();
+            fstream file;
+            file.open(SERVER_LIST_PATH.c_str(), ios::in);
+            if (file.is_open()) {
+                std::string file_line;
+
+                int count;
+                while (getline(file, file_line)) {
+                    CharStruct server_node_name;
+                    if (!file_line.empty()) {
+                        int split_loc = file_line.find(':');  // split to node and net
+                        if (split_loc != std::string::npos) {
+                            server_node_name = file_line.substr(0, split_loc);
+                            count = atoi(file_line.substr(split_loc+1, std::string::npos).c_str());
+                        } else {
+                            // no special network
+                            server_node_name=file_line;
+                            count = 1;
+                        }
+                        // server list is list of network interfaces
+                        for(int i=0;i<count;++i){
+                            SERVER_LIST.emplace_back(server_node_name);
+                        }
+                    }
+                }
+            } else {
+                printf("Error: Can't open server list file %s\n", SERVER_LIST_PATH.c_str());
+            }
+            file.close();
+            return SERVER_LIST;
+        }
+
         int CountServers(CharStruct server_list_path) {
             fstream file;
             int total = 0;
@@ -106,35 +139,40 @@ namespace sentinel {
         }
 
     public:
-        CharStruct JOBMANAGER_LISTS, WORKERMANAGER_HOST_FILE;
-        uint16_t JOBMANAGER_PORT, WORKERMANAGER_PORT;
-        uint16_t JOBMANAGER_RPC_THREADS, WORKERMANAGER_RPC_THREADS;
-        CharStruct JOBMANAGER_DIR, WORKERMANAGER_DIR;
+        CharStruct JOBMANAGER_HOST_FILE, WORKERMANAGER_HOST_FILE, BYTEFLOW_REGULATOR_HOST;
+        uint16_t JOBMANAGER_PORT, WORKERMANAGER_PORT, BYTEFLOW_REGULATOR_SERVER_PORT;
+        uint16_t JOBMANAGER_RPC_THREADS, WORKERMANAGER_RPC_THREADS, BYTEFLOW_REGULATOR_RPC_THREADS;
+        CharStruct JOBMANAGER_DIR, WORKERMANAGER_DIR, BYTEFLOW_REGULATOR_DIR;
         CharStruct CONFIGURATION_FILE;
         CharStruct WORKERMANAGER_DINAMIC_HOSTFILE;
         CharStruct WORKERMANAGER_EXECUTABLE;
-        uint16_t JOBMANAGER_COUNT, WORKERMANAGER_COUNT;
+        uint16_t JOBMANAGER_COUNT, WORKERMANAGER_COUNT, BYTEFLOW_REGULATOR_COUNT;
         uint16_t RANDOM_SEED;
         uint16_t MAX_LOAD;
+
         ResourceAllocation DEFAULT_RESOURCE_ALLOCATION;
-//        std::vector<CharStruct> WORKERMANAGER_LISTS;
+        std::vector<CharStruct> WORKERMANAGER_LISTS;
 
 
-        ConfigurationManager() : JOBMANAGER_LISTS("/home/user/symbios/conf/server_lists/single_node_rhea_jobmanager"),
+        ConfigurationManager() : JOBMANAGER_HOST_FILE("/home/user/symbios/conf/server_lists/single_node_rhea_jobmanager"),
                                  WORKERMANAGER_HOST_FILE("/home/user/symbios/conf/server_lists/single_node_rhea_workermanager"),
-//                                 WORKERMANAGER_LISTS(),
+                                 BYTEFLOW_REGULATOR_HOST("/home/user/symbios/conf/server_lists/single_node_rhea_byteflow_regulator"),
                                  JOBMANAGER_PORT(8000),
                                  WORKERMANAGER_PORT(9000),
+                                 BYTEFLOW_REGULATOR_SERVER_PORT(10000),
                                  JOBMANAGER_RPC_THREADS(4),
                                  WORKERMANAGER_RPC_THREADS(4),
-                                 DEFAULT_RESOURCE_ALLOCATION(1,1,1),
+                                 BYTEFLOW_REGULATOR_RPC_THREADS(4),
+                                 DEFAULT_RESOURCE_ALLOCATION(0, 1,1,1),
                                  JOBMANAGER_DIR("/dev/shm/hari/single_node_jobmanager_server"), //TODO: CHECK if they have to be different
+                                 BYTEFLOW_REGULATOR_DIR("/dev/shm/hari/single_node_byteflow_regulator_server"),
                                  WORKERMANAGER_DIR("/dev/shm/hari/single_node_workermanager_server"),
                                  CONFIGURATION_FILE("/home/user/sentinel/conf/base_rhea.conf"),
                                  WORKERMANAGER_DINAMIC_HOSTFILE("/home/user/symbios/conf/server_lists/single_node_rhea_dyn_workermanager"),
                                  WORKERMANAGER_EXECUTABLE("/home/user/symbios/build/workermanager_server"),
                                  JOBMANAGER_COUNT(1),
                                  WORKERMANAGER_COUNT(1),
+                                 BYTEFLOW_REGULATOR_COUNT(1),
                                  MAX_LOAD(0.8),
                                  RANDOM_SEED(100){}
 
@@ -155,7 +193,7 @@ namespace sentinel {
                 fclose(outfile);
                 exit(EXIT_FAILURE);
             }
-            config(doc, "JOBMANAGER_LISTS", JOBMANAGER_LISTS);
+            config(doc, "JOBMANAGER_LISTS", JOBMANAGER_HOST_FILE);
             config(doc, "WORKERMANAGER_HOST_FILE", WORKERMANAGER_HOST_FILE);
             config(doc, "JOBMANAGER_PORT", JOBMANAGER_PORT);
             config(doc, "WORKERMANAGER_PORT", WORKERMANAGER_PORT);
@@ -168,6 +206,8 @@ namespace sentinel {
             config(doc, "WORKERMANAGER_EXECUTABLE", WORKERMANAGER_EXECUTABLE);
             config(doc, "JOBMANAGER_COUNT", JOBMANAGER_COUNT);
             config(doc, "WORKERMANAGER_COUNT", WORKERMANAGER_COUNT);
+            config(doc, "BYTEFLOW_REGULATOR_SERVER_PORT", BYTEFLOW_REGULATOR_SERVER_PORT);
+            config(doc, "BYTEFLOW_REGULATOR_HOST", BYTEFLOW_REGULATOR_HOST);
             config(doc, "RANDOM_SEED", RANDOM_SEED);
             boost::filesystem::create_directories(JOBMANAGER_DIR.c_str());
             boost::filesystem::create_directories(WORKERMANAGER_DIR.c_str());
@@ -177,7 +217,7 @@ namespace sentinel {
 
         void ConfigureJobmanagerClient() {
             LoadConfiguration();
-            BASKET_CONF->ConfigureDefaultClient(JOBMANAGER_LISTS.c_str());
+            BASKET_CONF->ConfigureDefaultClient(JOBMANAGER_HOST_FILE.c_str());
             BASKET_CONF->RPC_PORT = JOBMANAGER_PORT;
         }
 
@@ -186,7 +226,7 @@ namespace sentinel {
             BASKET_CONF->RPC_THREADS = JOBMANAGER_RPC_THREADS;
             BASKET_CONF->MEMORY_ALLOCATED = 1024ULL * 1024ULL * 1ULL;
             BASKET_CONF->BACKED_FILE_DIR=JOBMANAGER_DIR;
-            BASKET_CONF->ConfigureDefaultServer(JOBMANAGER_LISTS.c_str());
+            BASKET_CONF->ConfigureDefaultServer(JOBMANAGER_HOST_FILE.c_str());
             JOBMANAGER_COUNT = BASKET_CONF->NUM_SERVERS;
             BASKET_CONF->RPC_PORT = JOBMANAGER_PORT;
         }
@@ -206,6 +246,25 @@ namespace sentinel {
             WORKERMANAGER_COUNT = BASKET_CONF->NUM_SERVERS;
             BASKET_CONF->RPC_PORT = WORKERMANAGER_PORT;
         }
+
+        void ConfigureByteflowRegulatorClient() {
+            LoadConfiguration();
+            //port, SERVER_LIST
+            BASKET_CONF->ConfigureDefaultClient(BYTEFLOW_REGULATOR_HOST.c_str());
+            BASKET_CONF->RPC_PORT = BYTEFLOW_REGULATOR_SERVER_PORT;
+        }
+
+        void ConfigureByteflowRegulatorServer() {
+            LoadConfiguration();
+            //port, list of servers, server dir,
+            BASKET_CONF->RPC_THREADS = BYTEFLOW_REGULATOR_RPC_THREADS;
+            BASKET_CONF->MEMORY_ALLOCATED = 1024ULL * 1024ULL * 1ULL;
+            BASKET_CONF->BACKED_FILE_DIR=BYTEFLOW_REGULATOR_DIR;
+            BASKET_CONF->ConfigureDefaultServer(BYTEFLOW_REGULATOR_HOST.c_str());
+            BYTEFLOW_REGULATOR_COUNT = BASKET_CONF->NUM_SERVERS;
+            BASKET_CONF->RPC_PORT = BYTEFLOW_REGULATOR_SERVER_PORT;
+        }
+
     };
 }
-#endif //RHEA_CONFIGURATION_MANAGER_H
+#endif //SENTINEL_COMMON_CONFIGURATION_MANAGER_H

@@ -2,8 +2,8 @@
 // Created by mani on 9/14/2020.
 //
 
-#ifndef SENTINEL_JOBMANAGER_CLIENT_H
-#define SENTINEL_JOBMANAGER_CLIENT_H
+#ifndef SENTINEL_JOB_MANAGER_CLIENT_H
+#define SENTINEL_JOB_MANAGER_CLIENT_H
 
 #include <mpi.h>
 #include <basket/communication/rpc_lib.h>
@@ -22,11 +22,13 @@ namespace sentinel::job_manager {
 
         bool SubmitJob(uint32_t jobId);
 
+        bool TerminateJob(uint32_t jobId);
+
         bool UpdateWorkerManagerStats(uint32_t workerManagerId, WorkerManagerStats &stats) ;
 
         std::pair<bool, WorkerManagerStats> GetWorkerManagerStats(uint32_t workerManagerId);
 
-        std::pair<uint32_t, uint32_t> GetNextNode(uint32_t currentTaskId);
+        std::pair<uint32_t, uint32_t> GetNextNode(uint32_t workermanagerId, uint32_t currentTaskId);
 
         bool ChangeResourceAllocation(ResourceAllocation &resourceAllocation);
 
@@ -34,4 +36,4 @@ namespace sentinel::job_manager {
 }
 
 
-#endif //RHEA_JOBMANAGER_CLIENT_H
+#endif //SENTINEL_JOB_MANAGER_CLIENT_H
