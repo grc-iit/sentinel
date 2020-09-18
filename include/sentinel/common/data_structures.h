@@ -65,24 +65,24 @@ typedef struct Job{
 
 
 typedef struct ResourceAllocation {
-    uint16_t job_id;
+    uint16_t job_id_;
     uint16_t num_nodes_;
     uint16_t num_procs_per_node;
     uint16_t num_threads_per_proc;
 
-    ResourceAllocation(uint16_t num_nodes, uint16_t num_procs_per_node, uint16_t num_threads_per_proc): num_nodes_(num_nodes), num_procs_per_node(num_procs_per_node), num_threads_per_proc(num_threads_per_proc){}
+    ResourceAllocation(uint16_t job_id, uint16_t num_nodes, uint16_t num_procs_per_node, uint16_t num_threads_per_proc): job_id_(job_id),num_nodes_(num_nodes), num_procs_per_node(num_procs_per_node), num_threads_per_proc(num_threads_per_proc){}
 
     /*Define the default, copy and move constructor*/
-    ResourceAllocation(): job_id(0),num_nodes_(0), num_procs_per_node(0), num_threads_per_proc(){}
-    ResourceAllocation(const ResourceAllocation &other): job_id(other.job_id),num_nodes_(other.num_nodes_), num_procs_per_node(other.num_procs_per_node), num_threads_per_proc(other.num_threads_per_proc){}
-    ResourceAllocation(ResourceAllocation &other): job_id(other.job_id) ,num_nodes_(other.num_nodes_), num_procs_per_node(other.num_procs_per_node), num_threads_per_proc(other.num_threads_per_proc){}
+    ResourceAllocation(): job_id_(0),num_nodes_(0), num_procs_per_node(0), num_threads_per_proc(){}
+    ResourceAllocation(const ResourceAllocation &other): job_id_(other.job_id_),num_nodes_(other.num_nodes_), num_procs_per_node(other.num_procs_per_node), num_threads_per_proc(other.num_threads_per_proc){}
+    ResourceAllocation(ResourceAllocation &other): job_id_(other.job_id_) ,num_nodes_(other.num_nodes_), num_procs_per_node(other.num_procs_per_node), num_threads_per_proc(other.num_threads_per_proc){}
 
     /*Define Assignment Operator*/
     ResourceAllocation &operator=(const ResourceAllocation &other){
         num_nodes_ = other.num_nodes_;
         num_procs_per_node = other.num_procs_per_node;
         num_threads_per_proc = other.num_threads_per_proc;
-        job_id = other.job_id;
+        job_id_ = other.job_id_;
         return *this;
     }
 } ResourceAllocation;
