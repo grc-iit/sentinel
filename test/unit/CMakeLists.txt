@@ -38,9 +38,12 @@ set_property(TEST worker_manager_client_test APPEND PROPERTY ENVIRONMENT "CMAKE_
 add_executable(mpi_comm_spawn_simple_test jobmanager/com_spawn_test.cpp)
 add_executable(mpi_comm_spawn_executable_test jobmanager/executable.cpp)
 add_executable(jobmanager_test jobmanager/jobmanager_test.cpp)
+add_executable(jobmanager_client_test jobmanager/jobmanager_client_test.cpp)
 add_dependencies(mpi_comm_spawn_simple_test mpi_comm_spawn_executable_test)
 target_link_libraries(mpi_comm_spawn_simple_test -lmpi)
 target_link_libraries(mpi_comm_spawn_executable_test -lmpi)
+target_link_libraries(jobmanager_test -lmpi)
+target_link_libraries(jobmanager_client_test -lmpi)
 
 #add_test(NAME mpi_comm_spawn_simple_test COMMAND ${CMAKE_CURRENT_BINARY_DIR}/mpi_comm_spawn_simple_test)
 #set_property(TEST mpi_comm_spawn_simple_test APPEND PROPERTY ENVIRONMENT "CMAKE_SOURCE_DIR=${CMAKE_SOURCE_DIR}")
