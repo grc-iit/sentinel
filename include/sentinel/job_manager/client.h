@@ -22,11 +22,13 @@ namespace sentinel::job_manager {
 
         bool SubmitJob(uint32_t jobId);
 
+        bool TerminateJob(uint32_t jobId);
+
         bool UpdateWorkerManagerStats(uint32_t workerManagerId, WorkerManagerStats &stats) ;
 
         std::pair<bool, WorkerManagerStats> GetWorkerManagerStats(uint32_t workerManagerId);
 
-        std::pair<uint32_t, uint32_t> GetNextNode(uint32_t currentTaskId);
+        std::pair<uint32_t, uint32_t> GetNextNode(uint32_t workermanagerId, uint32_t currentTaskId);
 
         bool ChangeResourceAllocation(ResourceAllocation &resourceAllocation);
 
