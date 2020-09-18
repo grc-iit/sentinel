@@ -21,7 +21,7 @@ target_link_libraries(sentinel ${LIBS})
 set(SENTINEL_JOB_MANAGER ${SENTINEL_COMMON} src/sentinel/job_manager/server.cpp include/sentinel/job_manager/Server.h src/sentinel/job_manager/main.cpp)
 add_executable(sentinel_job_manager ${SENTINEL_JOB_MANAGER})
 add_dependencies(sentinel_job_manager sentinel)
-target_link_libraries(sentinel_job_manager ${LIBS})
+target_link_libraries(sentinel_job_manager ${LIBS} sentinel)
 
 set(SENTINEL_WORKER_MANAGER ${SENTINEL_COMMON} src/sentinel/worker_manager/main.cpp src/sentinel/worker_manager/server.cpp src/sentinel/worker_manager/server.h)
 add_executable(sentinel_worker_manager ${SENTINEL_WORKER_MANAGER})

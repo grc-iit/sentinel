@@ -2,8 +2,8 @@
 // Created by Jie on 8/27/20.
 //
 
-#ifndef SENTINEL_COMMON_ERROR_CODE_H
-#define SENTINEL_COMMON_ERROR_CODE_H
+#ifndef COMMON_ERROR_CODE_H
+#define COMMON_ERROR_CODE_H
 
 #include <string>
 #include <exception>
@@ -59,5 +59,5 @@ private:
     ErrorCode errorCode_;
 };
 
-#endif //SENTINEL_COMMON_ERROR_CODE_H
+#endif //COMMON_ERROR_CODE_H
 

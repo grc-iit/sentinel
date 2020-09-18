@@ -151,7 +151,7 @@ namespace sentinel {
         uint16_t MAX_LOAD;
 
         ResourceAllocation DEFAULT_RESOURCE_ALLOCATION;
-//        std::vector<CharStruct> WORKERMANAGER_LISTS;
+        std::vector<CharStruct> WORKERMANAGER_LISTS;
 
 
         ConfigurationManager() : JOBMANAGER_HOST_FILE("/home/user/symbios/conf/server_lists/single_node_rhea_jobmanager"),

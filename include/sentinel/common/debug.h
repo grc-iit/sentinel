@@ -31,8 +31,8 @@
 */
 
 
-#ifndef SENTINEL_COMMON_DEBUG_H
-#define SENTINEL_COMMON_DEBUG_H
+#ifndef COMMON_DEBUG_PROJECT_H
+#define COMMON_DEBUG_PROJECT_H
 
 #include <iostream>
 #include <csignal>
@@ -223,4 +223,4 @@ private:
 }
 
 
-#endif //SENTINEL_COMMON_DEBUG_H
+#endif //COMMON_DEBUG_PROJECT_H

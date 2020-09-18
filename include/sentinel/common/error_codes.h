@@ -2,8 +2,8 @@
 // Created by Jie on 8/28/20.
 //
 
-#ifndef SENTINEL_COMMON_ERROR_CODES_H
-#define SENTINEL_COMMON_ERROR_CODES_H
+#ifndef COMMON_ERROR_CODES_H
+#define COMMON_ERROR_CODES_H
 
 #include <sentinel/common/error_definition.h>
 
@@ -37,4 +37,4 @@ const ErrorCode NOT_FOUND_CLASS={3000, "Not found the requested class by class_i
 const ErrorCode SPAWN_WORKERMANAGER_FAILED={4000, "Spawning of worker managers failed"};
 const ErrorCode TERMINATE_WORKERMANAGER_FAILED={4001, "Termination of worker managers failed"};
 
-#endif //SENTINEL_COMMON_ERROR_CODES_H
+#endif //COMMON_ERROR_CODES_H
