@@ -13,16 +13,24 @@
 
 namespace sentinel::worker_manager {
 
+struct TaskID {
+    uint32_t job_id_ = 0;
+    uint32_t task_id_ = 0;
+
+    TaskID() = default;
+    TaskID(uint32_t job_id, uint32_t task_id): job_id_(job_id), task_id_(task_id) {}
+};
+
 class Worker {
 private:
-    sentinel::Queue<int> queue_;
-private:
-    int GetTask();
-    void ExecuteTask(int task_id);
+    sentinel::Queue<TaskID> queue_;
 public:
     Worker();
+    TaskID GetTask();
+    void GetAndExecuteTask();
+    void ExecuteTask(TaskID task_id);
     void Run(std::future<void> loop_cond);
-    void Enqueue(int task_id);
+    void Enqueue(TaskID task_id);
     int GetQueueDepth();
 };
 
@@ -43,7 +51,7 @@ public:
     Server();
     void Init();
     void Run(std::future<void> loop_cond);
-    bool AssignTask(uint32_t task_id);
+    bool AssignTask(uint32_t job_id, uint32_t task_id);
     bool FinalizeWorkerManager();
 };
 
