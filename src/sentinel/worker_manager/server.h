@@ -13,16 +13,25 @@
 
 namespace sentinel::worker_manager {
 
+struct TaskID {
+    uint32_t job_id_ = 0;
+    uint32_t task_id_ = 0;
+
+    TaskID() = default;
+    TaskID(uint32_t job_id, uint32_t task_id): job_id_(job_id), task_id_(task_id) {}
+};
+
 class Worker {
 private:
-    sentinel::Queue<int> queue_;
-private:
-    int GetTask();
-    void ExecuteTask(int task_id);
+    sentinel::Queue<TaskID> queue_;
+    uint32_t thread_timeout_ms_;
 public:
     Worker();
+    TaskID GetTask();
+    void GetAndExecuteTask();
+    void ExecuteTask(TaskID task_id);
     void Run(std::future<void> loop_cond);
-    void Enqueue(int task_id);
+    void Enqueue(TaskID task_id);
     int GetQueueDepth();
 };
 
@@ -30,9 +39,9 @@ class Server {
 private:
     sentinel::ThreadPool<Worker> pool_;
     std::shared_ptr<RPC> client_rpc_;
-    int num_tasks_assigned_ = 0, min_tasks_assigned_update_ = 512;
+    uint32_t num_tasks_assigned_ = 0, min_tasks_assigned_update_;
     common::debug::Timer epoch_timer_;
-    uint32_t epoch_usec_ = 1000;
+    uint32_t epoch_msec_;
     int rank_ = 0;
 private:
     bool ReadyToUpdateJobManager();
@@ -43,7 +52,7 @@ public:
     Server();
     void Init();
     void Run(std::future<void> loop_cond);
-    bool AssignTask(uint32_t task_id);
+    bool AssignTask(uint32_t job_id, uint32_t task_id);
     bool FinalizeWorkerManager();
 };
 

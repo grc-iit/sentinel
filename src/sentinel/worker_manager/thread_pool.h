@@ -72,13 +72,13 @@ public:
 template<class T>
 class ThreadPool {
 private:
-    int size_ = 0;
+    uint32_t size_ = 0;
     std::vector<Thread<T>> pool_;
     std::list<Thread<T>*> free_list_;
     std::mutex lock;
 public:
     ThreadPool() = default;
-    void Init(int count)  {
+    void Init(uint32_t count)  {
         pool_.reserve(count);
         for(int i = 0; i < count; ++i) {
             pool_.emplace_back(this, i);
@@ -120,11 +120,11 @@ public:
         }
     }
 
-    int Size() {
+    uint32_t Size() {
         return size_;
     }
 
-    int MaxSize() {
+    uint32_t MaxSize() {
         return pool_.size();
     }
 

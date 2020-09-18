@@ -32,6 +32,7 @@ public:
             return false;
         }
         lock_.lock();
+        obj = list_.front();
         list_.pop_front();
         --size_;
         lock_.unlock();
