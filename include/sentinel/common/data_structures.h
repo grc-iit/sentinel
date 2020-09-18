@@ -14,6 +14,19 @@
 #include <common/data_structure.h>
 #include <vector>
 
+typedef struct Event: public Data{
+
+    /*Define the default, copy and move constructor*/
+    Event(CharStruct id_, size_t position_, char *buffer_, uint16_t storage_index_, size_t data_size_): Data(id_, position_, buffer_, storage_index_,data_size_){}
+
+    Event(const Event &other): Data(other){}
+    Event(Event &other): Data(other){}
+    /*Define Assignment Operator*/
+    Event &operator=(const Event &other){
+        Data::operator=(other);
+        return *this;
+    }
+}Event;
 
 typedef struct Task{
 
@@ -21,10 +34,34 @@ typedef struct Task{
 
     Task():links(){}
 
-    void Execute(){
+    virtual void Execute(){
         printf("Test task's execute function....\n");
     }
 }Task;
+
+typedef struct SourceTask: public Task{
+    SourceTask():Task(){}
+
+    void Execute(){
+        printf("Test SourceTask's execute function....\n");
+    }
+}SourceTask;
+
+typedef struct KeyByTask: public Task{
+    KeyByTask():Task(){}
+
+    void Execute(){
+        printf("Test KeyByTask's execute function....\n");
+    }
+}KeyByTask;
+
+typedef struct SinkTask: public Task{
+    SinkTask():Task(){}
+
+    void Execute(){
+        printf("Test SinkTask's execute function....\n");
+    }
+}SinkTask;
 
 typedef struct Job{
 
@@ -98,83 +135,253 @@ typedef struct WorkerManagerStats {
 } WorkerManagerStats;
 namespace clmdep_msgpack {
     MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
-            namespace adaptor {
-                namespace mv1 = clmdep_msgpack::v1;
-                template<>
-                struct convert<WorkerManagerStats> {
-                    mv1::object const &operator()(mv1::object const &o, WorkerManagerStats &input) const {
-                        input.thrpt_kops_ = o.via.array.ptr[0].as<double>();
-                        input.num_tasks_exec_ = o.via.array.ptr[1].as<uint32_t>();
-                        input.num_tasks_queued_ = o.via.array.ptr[2].as<uint32_t>();
-                        return o;
-                    }
-                };
+        namespace mv1 = clmdep_msgpack::v1;
 
-                template<>
-                struct pack<WorkerManagerStats> {
-                    template<typename Stream>
-                    packer <Stream> &operator()(mv1::packer <Stream> &o, WorkerManagerStats const &input) const {
-                        o.pack_array(3);
-                        o.pack(input.thrpt_kops_);
-                        o.pack(input.num_tasks_exec_);
-                        o.pack(input.num_tasks_queued_);
-                        return o;
+        namespace adaptor {
+            template<>
+            struct convert<Event> {
+                mv1::object const &operator()(mv1::object const &o, Event &input) const {
+                    input.id_ = o.via.array.ptr[0].as<CharStruct>();
+                    input.position_ = o.via.array.ptr[1].as<size_t>();
+                    auto data = o.via.array.ptr[2].as<std::string>();
+                    input.data_size_ = o.via.array.ptr[3].as<size_t>();
+                    if (!data.empty()) {
+                        input.buffer_ = static_cast<char *>(malloc(input.data_size_));
+                        memcpy(input.buffer_, data.data(), input.data_size_);
                     }
-                };
+                    input.storage_index_ = o.via.array.ptr[4].as<uint16_t>();
+                    return o;
+                }
+            };
 
-                template<>
-                struct object_with_zone<WorkerManagerStats> {
-                    void operator()(mv1::object::with_zone &o, WorkerManagerStats const &input) const {
-                        o.type = type::ARRAY;
-                        o.via.array.size = 3;
-                        o.via.array.ptr = static_cast<clmdep_msgpack::object *>(o.zone.allocate_align(
-                                sizeof(mv1::object) * o.via.array.size, MSGPACK_ZONE_ALIGNOF(mv1::object)));
-                        o.via.array.ptr[0] = mv1::object(input.thrpt_kops_, o.zone);
-                        o.via.array.ptr[1] = mv1::object(input.num_tasks_exec_, o.zone);
-                        o.via.array.ptr[2] = mv1::object(input.num_tasks_queued_, o.zone);
+            template<>
+            struct pack<Event> {
+                template<typename Stream>
+                packer<Stream> &operator()(mv1::packer<Stream> &o, Event const &input) const {
+                    o.pack_array(5);
+                    o.pack(input.id_);
+                    o.pack(input.position_);
+                    if (input.buffer_ == NULL) o.pack(std::string());
+                    else {
+                        o.pack(std::string(input.buffer_, input.data_size_));
                     }
-                };
+                    o.pack(input.data_size_);
+                    o.pack(input.storage_index_);
+                    return o;
+                }
+            };
 
-                template<>
-                struct convert<ResourceAllocation> {
-                    mv1::object const &operator()(mv1::object const &o, ResourceAllocation &input) const {
-                        input.num_nodes_ = o.via.array.ptr[0].as<uint16_t>();
-                        input.num_procs_per_node = o.via.array.ptr[1].as<uint16_t>();
-                        input.num_threads_per_proc = o.via.array.ptr[2].as<uint16_t>();
-                        return o;
+            template<>
+            struct object_with_zone<Event> {
+                void operator()(mv1::object::with_zone &o, Event const &input) const {
+                    o.type = type::ARRAY;
+                    o.via.array.size = 5;
+                    o.via.array.ptr = static_cast<clmdep_msgpack::object *>(o.zone.allocate_align(
+                            sizeof(mv1::object) * o.via.array.size, MSGPACK_ZONE_ALIGNOF(mv1::object)));
+                    o.via.array.ptr[0] = mv1::object(input.id_, o.zone);
+                    o.via.array.ptr[1] = mv1::object(input.position_, o.zone);
+                    if (input.buffer_ == NULL) o.via.array.ptr[2] = mv1::object(std::string(), o.zone);
+                    else {
+                        o.via.array.ptr[2] = mv1::object(std::string(input.buffer_, input.data_size_), o.zone);
+                        free(input.buffer_);
                     }
-                };
+                    o.via.array.ptr[3] = mv1::object(input.data_size_, o.zone);
+                    o.via.array.ptr[4] = mv1::object(input.storage_index_, o.zone);
+                }
+            };
 
-                template<>
-                struct pack<ResourceAllocation> {
-                    template<typename Stream>
-                    packer <Stream> &operator()(mv1::packer <Stream> &o, ResourceAllocation const &input) const {
-                        o.pack_array(3);
-                        o.pack(input.num_nodes_);
-                        o.pack(input.num_procs_per_node);
-                        o.pack(input.num_threads_per_proc);
-                        return o;
-                    }
-                };
+            template<>
+            struct convert<WorkerManagerStats> {
+                mv1::object const &operator()(mv1::object const &o, WorkerManagerStats &input) const {
+                    input.thrpt_kops_ = o.via.array.ptr[0].as<double>();
+                    input.num_tasks_exec_ = o.via.array.ptr[1].as<uint32_t>();
+                    input.num_tasks_queued_ = o.via.array.ptr[2].as<uint32_t>();
+                    return o;
+                }
+            };
 
-                template<>
-                struct object_with_zone<ResourceAllocation> {
-                    void operator()(mv1::object::with_zone &o, ResourceAllocation const &input) const {
-                        o.type = type::ARRAY;
-                        o.via.array.size = 3;
-                        o.via.array.ptr = static_cast<clmdep_msgpack::object *>(o.zone.allocate_align(
-                                sizeof(mv1::object) * o.via.array.size, MSGPACK_ZONE_ALIGNOF(mv1::object)));
-                        o.via.array.ptr[0] = mv1::object(input.num_nodes_, o.zone);
-                        o.via.array.ptr[1] = mv1::object(input.num_procs_per_node, o.zone);
-                        o.via.array.ptr[2] = mv1::object(input.num_threads_per_proc, o.zone);
-                    }
-                };
-            }  // namespace adaptor
+            template<>
+            struct pack<WorkerManagerStats> {
+                template<typename Stream>
+                packer<Stream> &operator()(mv1::packer<Stream> &o, WorkerManagerStats const &input) const {
+                    o.pack_array(3);
+                    o.pack(input.thrpt_kops_);
+                    o.pack(input.num_tasks_exec_);
+                    o.pack(input.num_tasks_queued_);
+                    return o;
+                }
+            };
+
+            template<>
+            struct object_with_zone<WorkerManagerStats> {
+                void operator()(mv1::object::with_zone &o, WorkerManagerStats const &input) const {
+                    o.type = type::ARRAY;
+                    o.via.array.size = 3;
+                    o.via.array.ptr = static_cast<clmdep_msgpack::object *>(o.zone.allocate_align(
+                            sizeof(mv1::object) * o.via.array.size, MSGPACK_ZONE_ALIGNOF(mv1::object)));
+                    o.via.array.ptr[0] = mv1::object(input.thrpt_kops_, o.zone);
+                    o.via.array.ptr[1] = mv1::object(input.num_tasks_exec_, o.zone);
+                    o.via.array.ptr[2] = mv1::object(input.num_tasks_queued_, o.zone);
+                }
+            };
+
+            template<>
+            struct convert<ResourceAllocation> {
+                mv1::object const &operator()(mv1::object const &o, ResourceAllocation &input) const {
+                    input.num_nodes_ = o.via.array.ptr[0].as<uint16_t>();
+                    input.num_procs_per_node = o.via.array.ptr[1].as<uint16_t>();
+                    input.num_threads_per_proc = o.via.array.ptr[2].as<uint16_t>();
+                    return o;
+                }
+            };
+
+            template<>
+            struct pack<ResourceAllocation> {
+                template<typename Stream>
+                packer<Stream> &operator()(mv1::packer<Stream> &o, ResourceAllocation const &input) const {
+                    o.pack_array(3);
+                    o.pack(input.num_nodes_);
+                    o.pack(input.num_procs_per_node);
+                    o.pack(input.num_threads_per_proc);
+                    return o;
+                }
+            };
+
+            template<>
+            struct object_with_zone<ResourceAllocation> {
+                void operator()(mv1::object::with_zone &o, ResourceAllocation const &input) const {
+                    o.type = type::ARRAY;
+                    o.via.array.size = 3;
+                    o.via.array.ptr = static_cast<clmdep_msgpack::object *>(o.zone.allocate_align(
+                            sizeof(mv1::object) * o.via.array.size, MSGPACK_ZONE_ALIGNOF(mv1::object)));
+                    o.via.array.ptr[0] = mv1::object(input.num_nodes_, o.zone);
+                    o.via.array.ptr[1] = mv1::object(input.num_procs_per_node, o.zone);
+                    o.via.array.ptr[2] = mv1::object(input.num_threads_per_proc, o.zone);
+                }
+            };
+
+            template<>
+            struct convert<Task> {
+                mv1::object const &operator()(mv1::object const &o, Task &input) const {
+                    input.links = o.via.array.ptr[0].as<std::vector<std::shared_ptr<Task>>>();
+                    return o;
+                }
+            };
+
+            template<>
+            struct pack<Task>{
+                template<typename Stream>
+                packer <Stream> &operator()(mv1::packer <Stream> &o, Task const &input) const {
+                    o.pack_array(1);
+                    o.pack(input.links);
+                    return o;
+                }
+            };
+
+            template<>
+            struct object_with_zone<Task> {
+                void operator()(mv1::object::with_zone &o, Task const &input) const {
+                    o.type = type::ARRAY;
+                    o.via.array.size = 1;
+                    o.via.array.ptr = static_cast<clmdep_msgpack::object *>(o.zone.allocate_align(
+                            sizeof(mv1::object) * o.via.array.size, MSGPACK_ZONE_ALIGNOF(mv1::object)));
+                    o.via.array.ptr[0] = mv1::object(input.links, o.zone);
+                }
+            };
+
+            template<>
+            struct convert<SourceTask> {
+                mv1::object const &operator()(mv1::object const &o, SourceTask &input) const {
+                    input.links = o.via.array.ptr[0].as<std::vector<std::shared_ptr<Task>>>();
+                    return o;
+                }
+            };
+
+            template<>
+            struct pack<SourceTask>{
+                template<typename Stream>
+                packer <Stream> &operator()(mv1::packer <Stream> &o, SourceTask const &input) const {
+                    o.pack_array(1);
+                    o.pack(input.links);
+                    return o;
+                }
+            };
+
+            template<>
+            struct object_with_zone<SourceTask> {
+                void operator()(mv1::object::with_zone &o, SourceTask const &input) const {
+                    o.type = type::ARRAY;
+                    o.via.array.size = 1;
+                    o.via.array.ptr = static_cast<clmdep_msgpack::object *>(o.zone.allocate_align(
+                            sizeof(mv1::object) * o.via.array.size, MSGPACK_ZONE_ALIGNOF(mv1::object)));
+                    o.via.array.ptr[0] = mv1::object(input.links, o.zone);
+                }
+            };
+
+            template<>
+            struct convert<KeyByTask> {
+                mv1::object const &operator()(mv1::object const &o, KeyByTask &input) const {
+                    input.links = o.via.array.ptr[0].as<std::vector<std::shared_ptr<Task>>>();
+                    return o;
+                }
+            };
+
+            template<>
+            struct pack<KeyByTask>{
+                template<typename Stream>
+                packer <Stream> &operator()(mv1::packer <Stream> &o, KeyByTask const &input) const {
+                    o.pack_array(1);
+                    o.pack(input.links);
+                    return o;
+                }
+            };
+
+            template<>
+            struct object_with_zone<KeyByTask> {
+                void operator()(mv1::object::with_zone &o, KeyByTask const &input) const {
+                    o.type = type::ARRAY;
+                    o.via.array.size = 1;
+                    o.via.array.ptr = static_cast<clmdep_msgpack::object *>(o.zone.allocate_align(
+                            sizeof(mv1::object) * o.via.array.size, MSGPACK_ZONE_ALIGNOF(mv1::object)));
+                    o.via.array.ptr[0] = mv1::object(input.links, o.zone);
+                }
+            };
+
+            template<>
+            struct convert<SinkTask> {
+                mv1::object const &operator()(mv1::object const &o, SinkTask &input) const {
+                    input.links = o.via.array.ptr[0].as<std::vector<std::shared_ptr<Task>>>();
+                    return o;
+                }
+            };
+
+            template<>
+            struct pack<SinkTask>{
+                template<typename Stream>
+                packer <Stream> &operator()(mv1::packer <Stream> &o, SinkTask const &input) const {
+                    o.pack_array(1);
+                    o.pack(input.links);
+                    return o;
+                }
+            };
+
+            template<>
+            struct object_with_zone<SinkTask> {
+                void operator()(mv1::object::with_zone &o, SinkTask const &input) const {
+                    o.type = type::ARRAY;
+                    o.via.array.size = 1;
+                    o.via.array.ptr = static_cast<clmdep_msgpack::object *>(o.zone.allocate_align(
+                            sizeof(mv1::object) * o.via.array.size, MSGPACK_ZONE_ALIGNOF(mv1::object)));
+                    o.via.array.ptr[0] = mv1::object(input.links, o.zone);
+                }
+            };
+
+        }  // namespace adaptor
     }
 }  // namespace clmdep_msgpack
 
-
-
 std::ostream &operator<<(std::ostream &os, Data &data);
+
+std::ostream &operator<<(std::ostream &os, Event &event);
 
 #endif //SENTINEL_COMMON_DATA_STRUCTURES_H
