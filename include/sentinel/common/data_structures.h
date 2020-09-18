@@ -34,7 +34,7 @@ typedef struct Task{
 
     Task():links(){}
 
-    void Execute(){
+    virtual void Execute(){
         printf("Test task's execute function....\n");
     }
 }Task;
