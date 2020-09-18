@@ -17,7 +17,7 @@ bool sentinel::job_manager::Server::SubmitJob(uint32_t jobId){
     jobs.insert(std::make_pair(jobId, job));
 
     ResourceAllocation defaultResourceAllocation = SENTINEL_CONF->DEFAULT_RESOURCE_ALLOCATION;
-    defaultResourceAllocation.jobId = jobId;
+    defaultResourceAllocation.job_id_ = jobId;
 
     used_resources.insert(std::make_pair(jobId, std::vector<workmanager_id>()));
     SpawnWorkerManagers(defaultResourceAllocation);
@@ -50,7 +50,7 @@ bool sentinel::job_manager::Server::TerminateJob(uint32_t jobId){
         reversed_used_resources.erase(node);
         available_workermanagers.insert(std::make_pair(node, SENTINEL_CONF->WORKERMANAGER_LISTS[node]));
 
-        if(!workermanager_client->FinalizeWorkerManager(node)) return false;
+        workermanager_client->FinalizeWorkerManager(node);
     }
     used_resources.erase(jobId);
 }
@@ -107,37 +107,35 @@ bool sentinel::job_manager::Server::ChangeResourceAllocation(ResourceAllocation 
 }
 
 bool sentinel::job_manager::Server::SpawnWorkerManagers(ResourceAllocation &resourceAllocation) {
-    /**
-     * TODO: Maintain current node , proc within node and thread index within Server class
-     * - On allocate u calculate the nodes based on list and given allocation size.
-     * - Build a list of hosts and then call the mpi spawn.
-    */
+    char* cmd = SENTINEL_CONF->WORKERMANAGER_EXECUTABLE.data();
 
-    MPI_Comm taskManagerComm;
-    MPI_Info info[resourceAllocation.num_nodes_];
-    char *cmds[resourceAllocation.num_nodes_];
-    char **spawn_argv[resourceAllocation.num_nodes_];
-    int np[resourceAllocation.num_nodes_];
-    int errcodes[resourceAllocation.num_nodes_];
+    char * mpi_argv[2];
+    mpi_argv[0] = SENTINEL_CONF->CONFIGURATION_FILE.data();
+    mpi_argv[1] = (char *)0;
+
+    MPI_Info info;
+    MPI_Info_create(&info);
+    std::string hosts = "localhost";
     for(int i=0; i < resourceAllocation.num_nodes_; i++){
         mtx_allocate.lock();
         auto allocated_workermanager = available_workermanagers.begin();
         available_workermanagers.erase(available_workermanagers.begin());
         mtx_allocate.unlock();
 
-        used_resources.at(resourceAllocation.jobId).emplace_back(allocated_workermanager->first);
-        reversed_used_resources.insert(std::make_pair(allocated_workermanager->first, resourceAllocation.jobId));
-
-        MPI_Info_create(&info[i]);
-        MPI_Info_set(info[i],"host","node1");
-        cmds[i] = { SENTINEL_CONF->WORKERMANAGER_EXECUTABLE.data()};
-        spawn_argv[i][0] = { SENTINEL_CONF->CONFIGURATION_FILE.data()}; //TODO: this might be one
-        np[i] = {1};
+        used_resources.at(resourceAllocation.job_id_).emplace_back(allocated_workermanager->first);
+        reversed_used_resources.insert(std::make_pair(allocated_workermanager->first, resourceAllocation.job_id_));
+        hosts += "," + allocated_workermanager->second.string();
     }
-    MPI_Comm_spawn_multiple(resourceAllocation.num_nodes_, cmds, spawn_argv, np, info, 0, MPI_COMM_WORLD, &taskManagerComm, errcodes );
+    MPI_Info_set(info,"host",hosts.data());
+
+    MPI_Comm workerManagerComm;
+
+    int errcodes[resourceAllocation.num_nodes_];
+
+    MPI_Comm_spawn(cmd, mpi_argv, resourceAllocation.num_nodes_, info, 0, MPI_COMM_WORLD, &workerManagerComm, errcodes );
 
     for(int i=0; i < resourceAllocation.num_nodes_; i++){
-        if( errcodes[i] != MPI_SUCCESS) return false;
+        if( errcodes[i] != MPI_SUCCESS) throw ErrorException(SPAWN_WORKERMANAGER_FAILED);;
     }
     return true;
 }
@@ -152,11 +150,11 @@ bool sentinel::job_manager::Server::TerminateWorkerManagers(ResourceAllocation &
         mtx_loadmap.unlock();
 
         available_workermanagers.insert(std::make_pair(workermanager_killed, SENTINEL_CONF->WORKERMANAGER_LISTS[workermanager_killed]));
-        auto list_workmanagers = used_resources.at(resourceAllocation.jobId);
+        auto list_workmanagers = used_resources.at(resourceAllocation.job_id_);
         list_workmanagers.erase(std::remove(list_workmanagers.begin(), list_workmanagers.end(), workermanager_killed), list_workmanagers.end());
         reversed_used_resources.erase(workermanager_killed);
 
-        if(!workermanager_client->FinalizeWorkerManager(workermanager_killed)) return false;
+        if(!workermanager_client->FinalizeWorkerManager(workermanager_killed)) throw ErrorException(TERMINATE_WORKERMANAGER_FAILED);;
     }
     return true;
 }
