@@ -17,6 +17,7 @@
 typedef struct Event: public Data{
 
     /*Define the default, copy and move constructor*/
+    Event(): Data(){}
     Event(CharStruct id_, size_t position_, char *buffer_, uint16_t storage_index_, size_t data_size_): Data(id_, position_, buffer_, storage_index_,data_size_){}
 
     Event(const Event &other): Data(other){}
