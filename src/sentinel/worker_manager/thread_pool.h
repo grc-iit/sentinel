@@ -10,6 +10,7 @@
 #include <thread>
 #include <future>
 #include <mutex>
+#include <functional>
 
 namespace sentinel {
 template<class T> class Thread;
@@ -24,7 +25,10 @@ private:
     std::future<void> thread_complete_;
     std::shared_ptr<T> obj_;
 public:
-    Thread(ThreadPool<T> *pool, int tid) : pool_(pool), tid_(tid) {}
+    Thread() = default;
+    Thread(ThreadPool<T> *pool, int tid) : pool_(pool), tid_(tid) {
+        obj_ = std::make_shared<T>();
+    }
 
     template<typename ...Args>
     void Assign(Args ...args) {
@@ -35,24 +39,25 @@ public:
     template<typename ...Args>
     void Run(Args ...args) {
         try {
-            obj_->Run(std::move(loop_cond_.get_future()), args...);
+            obj_->Run(loop_cond_.get_future(), args...);
         }
         catch(...) {
-            pool_->Stop(tid_);
             throw 1; //TODO: Re-throw exception
         }
-        pool_->Stop(tid_);
     }
 
-    bool IsActive() {
+    bool IsActive(int timeout_ms = 0) {
         return
             thread_complete_.valid() &&
-            thread_complete_.wait_for(std::chrono::milliseconds(0))!=std::future_status::ready;
+            thread_complete_.wait_for(std::chrono::milliseconds(timeout_ms))==std::future_status::timeout;
     }
 
     void Stop() {
         loop_cond_.set_value();
-        loop_cond_ = std::promise<void>();
+    }
+
+    void Wait(int timeout_ms = 25) {
+        while(IsActive(timeout_ms));
     }
 
     int GetTid() {
@@ -67,14 +72,14 @@ public:
 template<class T>
 class ThreadPool {
 private:
-    int size_;
+    int size_ = 0;
     std::vector<Thread<T>> pool_;
     std::list<Thread<T>*> free_list_;
     std::mutex lock;
 public:
     ThreadPool() = default;
     void Init(int count)  {
-        pool_.resize(count);
+        pool_.reserve(count);
         for(int i = 0; i < count; ++i) {
             pool_.emplace_back(this, i);
             free_list_.emplace_back(&pool_[i]);
@@ -88,6 +93,7 @@ public:
         }
         lock.lock();
         Thread<T> *thread = free_list_.front();
+        free_list_.pop_front();
         ++size_;
         lock.unlock();
         thread->Assign(args...);
@@ -108,6 +114,12 @@ public:
         }
     }
 
+    void WaitAll() {
+        for(int i = 0; i < pool_.size(); ++i) {
+            pool_[i].Wait();
+        }
+    }
+
     int Size() {
         return size_;
     }
@@ -115,6 +127,10 @@ public:
     int MaxSize() {
         return pool_.size();
     }
+
+    std::shared_ptr<T> Get(int tid) {
+        return std::move(pool_[tid].GetObj());
+    };
 
     typename std::vector<Thread<T>>::iterator begin() {
         return pool_.begin();

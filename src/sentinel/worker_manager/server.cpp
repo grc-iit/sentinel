@@ -21,6 +21,7 @@
 sentinel::worker_manager::Server::Server() {
     SENTINEL_CONF->ConfigureWorkermanagerServer();
     Init();
+    //TODO: Actually initialize thread pool???
     epoch_timer_.startTime();
     MPI_Comm_rank(MPI_COMM_WORLD, &rank_);
 }
@@ -135,11 +136,12 @@ int sentinel::worker_manager::Worker::GetTask() {
 
 void sentinel::worker_manager::Worker::ExecuteTask(int task_id) {
     std::cout << "Execute " << task_id << std::endl;
+    fflush(stdout);
 }
 
 void sentinel::worker_manager::Worker::Run(std::future<void> loop_cond) {
     bool kill_if_empty = false;
-    do {
+    while(loop_cond.wait_for(std::chrono::milliseconds(100))==std::future_status::timeout) {
         if(queue_.size() == 0 && kill_if_empty) {
             return;
         }
@@ -148,7 +150,6 @@ void sentinel::worker_manager::Worker::Run(std::future<void> loop_cond) {
         }
         kill_if_empty = true;
     }
-    while(loop_cond.wait_for(std::chrono::milliseconds(1))==std::future_status::timeout);
 }
 
 void sentinel::worker_manager::Worker::Enqueue(int task_id) {
