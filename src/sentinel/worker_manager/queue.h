@@ -28,11 +28,14 @@ public:
         lock_.unlock();
     }
     bool Pop(T &obj) {
+        if(size_ == 0) {
+            return false;
+        }
         lock_.lock();
         list_.pop_front();
         --size_;
         lock_.unlock();
-        return false;
+        return true;
     }
     uint32_t Size() {
         return size_;
