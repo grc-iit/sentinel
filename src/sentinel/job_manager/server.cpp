@@ -26,7 +26,7 @@ bool sentinel::job_manager::Server::SubmitJob(uint32_t jobId){
     workmanager_id workermanager = used_resources.at(jobId).at(0);
 
     uint32_t collector_id = job->GetCollectorId();
-    workermanager_client->AssignTask(workermanager, collector_id);
+    workermanager_client->AssignTask(workermanager, jobId, collector_id);
     //Lets ensure that load map is not empty
     WorkerManagerStats wms = WorkerManagerStats();
     UpdateWorkerManagerStats(workermanager, wms);

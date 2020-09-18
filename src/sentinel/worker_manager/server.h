@@ -24,6 +24,7 @@ struct TaskID {
 class Worker {
 private:
     sentinel::Queue<TaskID> queue_;
+    uint32_t thread_timeout_ms_;
 public:
     Worker();
     TaskID GetTask();
@@ -38,9 +39,9 @@ class Server {
 private:
     sentinel::ThreadPool<Worker> pool_;
     std::shared_ptr<RPC> client_rpc_;
-    int num_tasks_assigned_ = 0, min_tasks_assigned_update_ = 512;
+    uint32_t num_tasks_assigned_ = 0, min_tasks_assigned_update_;
     common::debug::Timer epoch_timer_;
-    uint32_t epoch_msec_ = 1000;
+    uint32_t epoch_msec_;
     int rank_ = 0;
 private:
     bool ReadyToUpdateJobManager();
