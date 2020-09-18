@@ -40,7 +40,7 @@ private:
     std::shared_ptr<RPC> client_rpc_;
     int num_tasks_assigned_ = 0, min_tasks_assigned_update_ = 512;
     common::debug::Timer epoch_timer_;
-    uint32_t epoch_usec_ = 1000;
+    uint32_t epoch_msec_ = 1000;
     int rank_ = 0;
 private:
     bool ReadyToUpdateJobManager();

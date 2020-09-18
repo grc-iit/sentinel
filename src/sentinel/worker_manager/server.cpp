@@ -23,10 +23,12 @@
 sentinel::worker_manager::Server::Server() {
     AUTO_TRACER("sentinel::worker_manager::Server::Server");
     SENTINEL_CONF->ConfigureWorkermanagerServer();
-    Init();
-    pool_.Init(4); //TODO: Configuration Manager
+    pool_.Init(SENTINEL_CONF->WORKERTHREAD_COUNT);
+    epoch_msec_ = SENTINEL_CONF->WORKERMANAGER_EPOCH_MS;
+    min_tasks_assigned_update_ = SENTINEL_CONF->WORKERMANAGER_UPDATE_MIN_TASKS;
     epoch_timer_.startTime();
     MPI_Comm_rank(MPI_COMM_WORLD, &rank_);
+    Init();
 }
 
 void sentinel::worker_manager::Server::Init() {
@@ -93,7 +95,9 @@ int sentinel::worker_manager::Server::GetNumTasksQueued(void) {
 
 bool sentinel::worker_manager::Server::ReadyToUpdateJobManager() {
     AUTO_TRACER("sentinel::worker_manager::Server::ReadyToUpdateJobManager");
-    return (num_tasks_assigned_ > min_tasks_assigned_update_); //TODO: Check clock
+    epoch_timer_.pauseTime(); epoch_timer_.resumeTime();
+    return (num_tasks_assigned_ > min_tasks_assigned_update_)
+           || (epoch_timer_.getTimeElapsed() >= epoch_msec_); //TODO: Check clock
 }
 
 bool sentinel::worker_manager::Server::UpdateJobManager() {
