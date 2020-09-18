@@ -43,7 +43,6 @@ public:
     void Init();
     void Run(std::future<void> loop_cond);
     bool AssignTask(uint32_t task_id);
-    void KillWorkerManager();
     bool FinalizeWorkerManager();
 };
 

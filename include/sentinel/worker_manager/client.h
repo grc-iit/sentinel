@@ -22,7 +22,6 @@ public:
     Client();
     void Init();
     bool AssignTask(int server_index, int task_id);
-    void KillWorkerManager(int server_index);
     bool FinalizeWorkerManager(int server_index);
     void Finalize();
 };

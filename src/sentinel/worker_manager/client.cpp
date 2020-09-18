@@ -18,10 +18,6 @@ bool sentinel::worker_manager::Client::AssignTask(int server_index, int task_id)
     return check;
 }
 
-void sentinel::worker_manager::Client::KillWorkerManager(int server_index) {
-    server_rpc->call<RPCLIB_MSGPACK::object_handle>(server_index, "KillWorkerManager");
-}
-
 bool sentinel::worker_manager::Client::FinalizeWorkerManager(int server_index) {
     auto check = server_rpc->call<RPCLIB_MSGPACK::object_handle>(server_index, "FinalizeWorkerManager").as<bool>();
     return check;

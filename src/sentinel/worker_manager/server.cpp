@@ -35,9 +35,6 @@ void sentinel::worker_manager::Server::Init() {
     std::function<bool(uint32_t)> functionAssignTask(std::bind(&sentinel::worker_manager::Server::AssignTask, this, std::placeholders::_1));
     client_rpc_->bind("AssignTask", functionAssignTask);
 
-    std::function<void(void)> functionKillWorkerManager(std::bind(&sentinel::worker_manager::Server::KillWorkerManager, this));
-    client_rpc_->bind("KillWorkerManager", functionKillWorkerManager);
-
     std::function<bool(void)>  functionFinalizeWorkerManager(std::bind(&sentinel::worker_manager::Server::FinalizeWorkerManager, this));
     client_rpc_->bind("FinalizeWorkerManager", functionFinalizeWorkerManager);
 }
@@ -127,11 +124,6 @@ bool sentinel::worker_manager::Server::AssignTask(uint32_t task_id) {
         UpdateJobManager();
     }
     return true;
-}
-
-void sentinel::worker_manager::Server::KillWorkerManager() {
-    AUTO_TRACER("sentinel::worker_manager::Server::KillWorkerManager");
-    exit(0);
 }
 
 bool sentinel::worker_manager::Server::FinalizeWorkerManager() {
