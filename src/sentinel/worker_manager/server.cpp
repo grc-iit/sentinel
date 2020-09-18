@@ -140,8 +140,8 @@ sentinel::worker_manager::Worker::Worker() {
 
 int sentinel::worker_manager::Worker::GetTask() {
     AUTO_TRACER("sentinel::worker_manager::Worker::GetTask");
-    int task_id = queue_.front();
-    queue_.pop_front();
+    int task_id = 0;
+    queue_.Pop(task_id);
     return task_id;
 }
 
@@ -153,10 +153,10 @@ void sentinel::worker_manager::Worker::Run(std::future<void> loop_cond) {
     AUTO_TRACER("sentinel::worker_manager::Worker::Run", task_id);
     bool kill_if_empty = false;
     while(loop_cond.wait_for(std::chrono::milliseconds(100))==std::future_status::timeout) {
-        if(queue_.size() == 0 && kill_if_empty) {
+        if(queue_.Size() == 0 && kill_if_empty) {
             return;
         }
-        while (queue_.size() > 0) {
+        while (queue_.Size() > 0) {
             ExecuteTask(GetTask());
         }
         kill_if_empty = true;
@@ -165,10 +165,10 @@ void sentinel::worker_manager::Worker::Run(std::future<void> loop_cond) {
 
 void sentinel::worker_manager::Worker::Enqueue(int task_id) {
     AUTO_TRACER("sentinel::worker_manager::Worker::Enqueue", task_id);
-    queue_.emplace_back(task_id);
+    queue_.Push(task_id);
 }
 
 int sentinel::worker_manager::Worker::GetQueueDepth() {
     AUTO_TRACER("sentinel::worker_manager::Worker::GetQueueDepth");
-    return queue_.size();
+    return queue_.Size();
 }

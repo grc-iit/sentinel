@@ -1,0 +1,43 @@
+//
+// Created by lukemartinlogan on 9/3/20.
+//
+
+#ifndef SENTINEL_DOUBLE_BUFFER_H
+#define SENTINEL_DOUBLE_BUFFER_H
+
+#include <common/debug.h>
+#include <thread>
+#include <mutex>
+#include <list>
+#include <atomic>
+
+namespace sentinel {
+
+template<typename T>
+class Queue {
+private:
+    std::mutex lock_;
+    std::list<T> list_;
+    uint32_t size_ = 0;
+public:
+    Queue() {}
+    void Push(const T &obj) {
+        lock_.lock();
+        list_.push_back(obj);
+        ++size_;
+        lock_.unlock();
+    }
+    bool Pop(T &obj) {
+        lock_.lock();
+        list_.pop_front();
+        --size_;
+        lock_.unlock();
+        return false;
+    }
+    uint32_t Size() {
+        return size_;
+    }
+};
+
+}
+#endif //SENTINEL_DOUBLE_BUFFER_H

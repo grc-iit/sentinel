@@ -7,6 +7,7 @@
 
 #include <string>
 #include "thread_pool.h"
+#include "queue.h"
 #include <basket.h>
 #include <sentinel/common/debug.h>
 
@@ -14,7 +15,7 @@ namespace sentinel::worker_manager {
 
 class Worker {
 private:
-    std::list<int> queue_;
+    sentinel::Queue<int> queue_;
 private:
     int GetTask();
     void ExecuteTask(int task_id);
