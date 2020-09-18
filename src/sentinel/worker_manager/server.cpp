@@ -109,6 +109,8 @@ bool sentinel::worker_manager::Server::UpdateJobManager() {
 
 bool sentinel::worker_manager::Server::AssignTask(uint32_t task_id) {
     AUTO_TRACER("sentinel::worker_manager::Server::AssignTask", task_id);
+    std::cout << "AssignTask" << std::endl;
+    fflush(stdout);
 
     //Spawn a new thread if there are any available in the pool
     if(pool_.Size() < pool_.MaxSize()) {
@@ -134,6 +136,8 @@ void sentinel::worker_manager::Server::KillWorkerManager() {
 
 bool sentinel::worker_manager::Server::FinalizeWorkerManager() {
     AUTO_TRACER("sentinel::worker_manager::Server::FinalizeWorkerManager");
+    std::cout << "FinalizeWorkerManager" << std::endl;
+    fflush(stdout);
     pool_.StopAll();
     return true;
 }

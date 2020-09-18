@@ -11,7 +11,6 @@ int main(int argc, char **argv)
     sentinel::worker_manager::Client client;
     client.AssignTask(0, 0);
     client.FinalizeWorkerManager(0);
-    client.KillWorkerManager(0);
     MPI_Finalize();
     return 0;
 }
