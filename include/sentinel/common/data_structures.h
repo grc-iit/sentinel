@@ -43,7 +43,7 @@ typedef struct Task{
 typedef struct SourceTask: public Task{
     SourceTask():Task(){}
 
-    void Execute(){
+    virtual void Execute(){
         printf("Test SourceTask's execute function....\n");
     }
 }SourceTask;
@@ -51,7 +51,7 @@ typedef struct SourceTask: public Task{
 typedef struct KeyByTask: public Task{
     KeyByTask():Task(){}
 
-    void Execute(){
+    virtual void Execute(){
         printf("Test KeyByTask's execute function....\n");
     }
 }KeyByTask;
@@ -59,7 +59,7 @@ typedef struct KeyByTask: public Task{
 typedef struct SinkTask: public Task{
     SinkTask():Task(){}
 
-    void Execute(){
+    virtual void Execute(){
         printf("Test SinkTask's execute function....\n");
     }
 }SinkTask;

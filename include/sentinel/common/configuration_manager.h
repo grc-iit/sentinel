@@ -147,6 +147,7 @@ namespace sentinel {
         CharStruct WORKERMANAGER_DINAMIC_HOSTFILE;
         CharStruct WORKERMANAGER_EXECUTABLE;
         uint16_t JOBMANAGER_COUNT, WORKERMANAGER_COUNT, BYTEFLOW_REGULATOR_COUNT;
+        uint16_t WORKERTHREAD_COUNT, WORKERMANAGER_EPOCH_MS, WORKERMANAGER_UPDATE_MIN_TASKS, WORKERTHREAD_TIMOUT_MS;
         uint16_t RANDOM_SEED;
         uint16_t MAX_LOAD;
 
@@ -172,6 +173,10 @@ namespace sentinel {
                                  WORKERMANAGER_EXECUTABLE("/home/user/symbios/build/workermanager_server"),
                                  JOBMANAGER_COUNT(1),
                                  WORKERMANAGER_COUNT(1),
+                                 WORKERTHREAD_COUNT(4),
+                                 WORKERMANAGER_EPOCH_MS(50),
+                                 WORKERMANAGER_UPDATE_MIN_TASKS(256),
+                                 WORKERTHREAD_TIMOUT_MS(100),
                                  BYTEFLOW_REGULATOR_COUNT(1),
                                  MAX_LOAD(0.8),
                                  RANDOM_SEED(100){}
@@ -206,6 +211,10 @@ namespace sentinel {
             config(doc, "WORKERMANAGER_EXECUTABLE", WORKERMANAGER_EXECUTABLE);
             config(doc, "JOBMANAGER_COUNT", JOBMANAGER_COUNT);
             config(doc, "WORKERMANAGER_COUNT", WORKERMANAGER_COUNT);
+            config(doc, "WORKERTHREAD_COUNT", WORKERTHREAD_COUNT);
+            config(doc, "WORKERMANAGER_EPOCH_MS", WORKERMANAGER_EPOCH_MS);
+            config(doc, "WORKERMANAGER_UPDATE_MIN_TASKS", WORKERMANAGER_UPDATE_MIN_TASKS);
+            config(doc, "WORKERTHREAD_TIMOUT_MS", WORKERTHREAD_TIMOUT_MS);
             config(doc, "BYTEFLOW_REGULATOR_SERVER_PORT", BYTEFLOW_REGULATOR_SERVER_PORT);
             config(doc, "BYTEFLOW_REGULATOR_HOST", BYTEFLOW_REGULATOR_HOST);
             config(doc, "RANDOM_SEED", RANDOM_SEED);

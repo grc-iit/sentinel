@@ -14,22 +14,18 @@
 #include <sentinel/common/configuration_manager.h>
 
 namespace sentinel::worker_manager {
-        class Client {
-        private:
-            std::shared_ptr<RPC> server_rpc;
-        public:
-            Client();
 
-            void Init();
+class Client {
+private:
+    std::shared_ptr<RPC> server_rpc;
+public:
+    Client();
+    void Init();
+    bool AssignTask(int server_index, uint32_t job_id, uint32_t task_id);
+    bool FinalizeWorkerManager(int server_index);
+    void Finalize();
+};
 
-            bool AssignTask(int server_index, int task_id);
-
-            bool TerminateWorkerManager(int server_index);
-
-            bool FinalizeWorkerManager(int server_index);
-
-            void Finalize();
-        };
 };
 
 #endif //SENTINEL_WORKER_MANAGER_CLIENT_H

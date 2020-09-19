@@ -13,13 +13,8 @@ void sentinel::worker_manager::Client::Init() {
     this->server_rpc = basket::Singleton<RPCFactory>::GetInstance()->GetRPC(BASKET_CONF->RPC_PORT);
 }
 
-bool sentinel::worker_manager::Client::AssignTask(int server_index, int task_id) {
-    auto check = server_rpc->call<RPCLIB_MSGPACK::object_handle>(server_index, "AssignTask", task_id).as<bool>();
-    return check;
-}
-
-bool sentinel::worker_manager::Client::TerminateWorkerManager(int server_index) {
-    auto check = server_rpc->call<RPCLIB_MSGPACK::object_handle>(server_index, "TerminateWorkerManager").as<bool>();
+bool sentinel::worker_manager::Client::AssignTask(int server_index, uint32_t job_id, uint32_t task_id) {
+    auto check = server_rpc->call<RPCLIB_MSGPACK::object_handle>(server_index, "AssignTask", job_id, task_id).as<bool>();
     return check;
 }
 

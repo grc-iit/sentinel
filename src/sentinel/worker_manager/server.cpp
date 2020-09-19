@@ -4,6 +4,8 @@
 
 #include "server.h"
 #include "thread_pool.h"
+#include <common/debug.h>
+#include <common/class_loader.h>
 #include <basket/common/configuration_manager.h>
 #include <sentinel/common/configuration_manager.h>
 #include <sentinel/job_manager/client.h>
@@ -19,26 +21,31 @@
  * */
 
 sentinel::worker_manager::Server::Server() {
+    AUTO_TRACER("sentinel::worker_manager::Server::Server");
     SENTINEL_CONF->ConfigureWorkermanagerServer();
-    Init();
+    pool_.Init(SENTINEL_CONF->WORKERTHREAD_COUNT);
+    epoch_msec_ = SENTINEL_CONF->WORKERMANAGER_EPOCH_MS;
+    min_tasks_assigned_update_ = SENTINEL_CONF->WORKERMANAGER_UPDATE_MIN_TASKS;
     epoch_timer_.startTime();
     MPI_Comm_rank(MPI_COMM_WORLD, &rank_);
+    Init();
 }
 
 void sentinel::worker_manager::Server::Init() {
+    AUTO_TRACER("sentinel::worker_manager::Server::Init");
     client_rpc_ = basket::Singleton<RPCFactory>::GetInstance()->GetRPC(BASKET_CONF->RPC_PORT);
 
-    std::function<void(uint32_t)> functionAssignTask(std::bind(&sentinel::worker_manager::Server::AssignTask, this, std::placeholders::_1));
+    std::function<bool(uint32_t, uint32_t)> functionAssignTask(std::bind(
+            &sentinel::worker_manager::Server::AssignTask,
+            this, std::placeholders::_1, std::placeholders::_2));
     client_rpc_->bind("AssignTask", functionAssignTask);
 
-    std::function<void(void)> functionTerminateWorkerManager(std::bind(&sentinel::worker_manager::Server::Terminate, this));
-    client_rpc_->bind("TerminateWorkerManager", functionTerminateWorkerManager);
-
-    std::function<void(void)>  functionFinalizeWorkerManager(std::bind(&sentinel::worker_manager::Server::Finalize, this));
+    std::function<bool(void)>  functionFinalizeWorkerManager(std::bind(&sentinel::worker_manager::Server::FinalizeWorkerManager, this));
     client_rpc_->bind("FinalizeWorkerManager", functionFinalizeWorkerManager);
 }
 
 void sentinel::worker_manager::Server::Run(std::future<void> loop_cond) {
+    AUTO_TRACER("sentinel::worker_manager::Server::Run");
     while(loop_cond.wait_for(std::chrono::milliseconds(1)) == std::future_status::timeout) {}
 }
 
@@ -47,6 +54,8 @@ std::shared_ptr<sentinel::worker_manager::Worker> sentinel::worker_manager::Serv
      * TODO: Dont ping the queues all the time. Maintain a reverse ordered_map datastructure and do a head on that
      * Keep this operation O(1)
      */
+
+    AUTO_TRACER("sentinel::worker_manager::Server::FindMinimumQueue");
     std::shared_ptr<Worker> worker;
     int min_queue_size = std::numeric_limits<int>::max();
 
@@ -70,6 +79,8 @@ int sentinel::worker_manager::Server::GetNumTasksQueued(void) {
      * Approach 2: also try keeping a array of size max threads for each thread this will avoid locking
      * Check which is faster through quick benchmark. (my intuition is both should be fine)
      */
+
+    AUTO_TRACER("sentinel::worker_manager::Server::GetNumTasksQueued");
     int num_tasks_queued = 0;
 
     for(Thread<Worker> &thread : pool_) {
@@ -83,19 +94,26 @@ int sentinel::worker_manager::Server::GetNumTasksQueued(void) {
 }
 
 bool sentinel::worker_manager::Server::ReadyToUpdateJobManager() {
-    return (num_tasks_assigned_ > min_tasks_assigned_update_); //TODO: Check clock
+    AUTO_TRACER("sentinel::worker_manager::Server::ReadyToUpdateJobManager");
+    epoch_timer_.pauseTime(); epoch_timer_.resumeTime();
+    return (num_tasks_assigned_ > min_tasks_assigned_update_) ||
+           (epoch_timer_.getTimeElapsed() >= epoch_msec_);
 }
 
-void sentinel::worker_manager::Server::UpdateJobManager() {
+bool sentinel::worker_manager::Server::UpdateJobManager() {
+    AUTO_TRACER("sentinel::worker_manager::Server::UpdateJobManager");
     double time_ms = epoch_timer_.endTime();
     int num_tasks_queued = GetNumTasksQueued();
     WorkerManagerStats wms(time_ms, num_tasks_assigned_, num_tasks_queued);
     auto jm = basket::Singleton<sentinel::job_manager::client>::GetInstance();
-    jm->UpdateWorkerManagerStats(rank_, wms);
+    bool check = jm->UpdateWorkerManagerStats(rank_, wms);
     epoch_timer_.startTime();
+    return check;
 }
 
-void sentinel::worker_manager::Server::AssignTask(uint32_t task_id) {
+bool sentinel::worker_manager::Server::AssignTask(uint32_t job_id, uint32_t task_id) {
+    AUTO_TRACER("sentinel::worker_manager::Server::AssignTask", task_id);
+
     //Spawn a new thread if there are any available in the pool
     if(pool_.Size() < pool_.MaxSize()) {
         pool_.Assign();
@@ -103,21 +121,20 @@ void sentinel::worker_manager::Server::AssignTask(uint32_t task_id) {
 
     //Enqueue work in existing thread
     std::shared_ptr<Worker> thread = FindMinimumQueue();
-    thread->Enqueue(task_id);
+    thread->Enqueue(TaskID(job_id, task_id));
     ++num_tasks_assigned_;
 
     //Update Job Manager
     if(ReadyToUpdateJobManager()) {
         UpdateJobManager();
     }
+    return true;
 }
 
-void sentinel::worker_manager::Server::Terminate() {
-    exit(0);
-}
-
-void sentinel::worker_manager::Server::Finalize() {
+bool sentinel::worker_manager::Server::FinalizeWorkerManager() {
+    AUTO_TRACER("sentinel::worker_manager::Server::FinalizeWorkerManager");
     pool_.StopAll();
+    return true;
 }
 
 /*
@@ -125,36 +142,51 @@ void sentinel::worker_manager::Server::Finalize() {
  * */
 
 sentinel::worker_manager::Worker::Worker() {
+    AUTO_TRACER("sentinel::worker_manager::Worker::Worker");
+    thread_timeout_ms_ = SENTINEL_CONF->WORKERTHREAD_TIMOUT_MS;
 }
 
-int sentinel::worker_manager::Worker::GetTask() {
-    int task_id = queue_.front();
-    queue_.pop_front();
-    return task_id;
+sentinel::worker_manager::TaskID sentinel::worker_manager::Worker::GetTask() {
+    AUTO_TRACER("sentinel::worker_manager::Worker::GetTask");
+    TaskID id;
+    queue_.Pop(id);
+    return std::move(id);
 }
 
-void sentinel::worker_manager::Worker::ExecuteTask(int task_id) {
-    std::cout << "Execute " << task_id << std::endl;
+void sentinel::worker_manager::Worker::ExecuteTask(TaskID id) {
+    AUTO_TRACER("sentinel::worker_manager::Worker::ExecuteTask", task_id);
+    std::shared_ptr<Job> job = ClassLoader().LoadClass<Job>(id.job_id_);
+    std::shared_ptr<Task> task = job->GetTask(id.task_id_);
+    task->Execute();
+}
+
+void sentinel::worker_manager::Worker::GetAndExecuteTask() {
+    ExecuteTask(GetTask());
 }
 
 void sentinel::worker_manager::Worker::Run(std::future<void> loop_cond) {
+    AUTO_TRACER("sentinel::worker_manager::Worker::Run", task_id);
     bool kill_if_empty = false;
     do {
-        if(queue_.size() == 0 && kill_if_empty) {
-            return;
+        if(queue_.Size() == 0) {
+            if(kill_if_empty) { return; }
+            kill_if_empty = true;
         }
-        while (queue_.size() > 0) {
-            ExecuteTask(GetTask());
+        else {
+            kill_if_empty = false;
         }
-        kill_if_empty = true;
-    }
-    while(loop_cond.wait_for(std::chrono::milliseconds(1))==std::future_status::timeout);
+        while (queue_.Size() > 0) {
+            GetAndExecuteTask();
+        }
+    } while(loop_cond.wait_for(std::chrono::milliseconds(thread_timeout_ms_))==std::future_status::timeout);
 }
 
-void sentinel::worker_manager::Worker::Enqueue(int task_id) {
-    queue_.emplace_back(task_id);
+void sentinel::worker_manager::Worker::Enqueue(TaskID id) {
+    AUTO_TRACER("sentinel::worker_manager::Worker::Enqueue", task_id);
+    queue_.Push(id);
 }
 
 int sentinel::worker_manager::Worker::GetQueueDepth() {
-    return queue_.size();
+    AUTO_TRACER("sentinel::worker_manager::Worker::GetQueueDepth");
+    return queue_.Size();
 }
