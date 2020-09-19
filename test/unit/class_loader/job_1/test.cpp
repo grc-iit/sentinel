@@ -16,14 +16,13 @@ typedef struct Job1: public Job{
         Job::operator=(other);
         return *this;
     }
-    std::shared_ptr<Task> GetTask(uint32_t task_id_){
+    std::shared_ptr<Task> GetTask(uint32_t task_id_ = 0){
         printf("Begin to create Task in Job1....\n");
         return std::make_shared<Task>();
     }
 
-    uint32_t GetNextTaskId(uint32_t task_id_){
-        printf("Test Job1's GetNextId function....\n");
-        return task_id_ + 1;
+    void CreateDag(){
+        printf("Job1 create Dag\n");
     }
 };
 

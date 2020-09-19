@@ -20,7 +20,6 @@ int main(int argc, char* argv[]){
     auto end_time = std::chrono::steady_clock::now();
     std::shared_ptr<Task> task = job->GetTask(task_id);
     task->Execute();
-    job->GetNextTaskId(task_id);
 
     double dr_ns=std::chrono::duration<double,std::milli>(end_time-start_time).count();
     printf("It spend %0.2f ms to load all the so files\n", dr_ns);
