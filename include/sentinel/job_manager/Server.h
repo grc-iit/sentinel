@@ -51,7 +51,7 @@ namespace sentinel::job_manager{
             SENTINEL_CONF->ConfigureJobManagerServer();
             auto basket=BASKET_CONF;
             rpc=basket::Singleton<RPCFactory>::GetInstance()->GetRPC(BASKET_CONF->RPC_PORT);
-            std::function<bool(uint32_t)> functionSubmitJob(std::bind(&sentinel::job_manager::Server::SubmitJob, this, std::placeholders::_1));
+            std::function<bool(uint32_t,uint32_t)> functionSubmitJob(std::bind(&sentinel::job_manager::Server::SubmitJob, this, std::placeholders::_1, std::placeholders::_2));
             std::function<bool(uint32_t)> functionTerminateJob(std::bind(&sentinel::job_manager::Server::TerminateJob, this, std::placeholders::_1));
             std::function<bool(uint32_t,WorkerManagerStats&)> functionUpdateWorkerManagerStats(std::bind(&sentinel::job_manager::Server::UpdateWorkerManagerStats, this, std::placeholders::_1, std::placeholders::_2));
             std::function<std::pair<bool, WorkerManagerStats>(uint32_t)> functionGetWorkerManagerStats(std::bind(&sentinel::job_manager::Server::GetWorkerManagerStats, this, std::placeholders::_1));
@@ -70,7 +70,7 @@ namespace sentinel::job_manager{
                 i++;
             }
         }
-        bool SubmitJob(uint32_t jobId);
+        bool SubmitJob(uint32_t jobId, uint32_t num_sources);
         bool TerminateJob(uint32_t jobId);
         bool UpdateWorkerManagerStats(uint32_t workerManagerId, WorkerManagerStats &stats);
         std::pair<bool, WorkerManagerStats> GetWorkerManagerStats(uint32_t workerManagerId);

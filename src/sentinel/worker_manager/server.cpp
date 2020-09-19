@@ -117,7 +117,7 @@ bool sentinel::worker_manager::Server::AssignTask(uint32_t job_id, uint32_t task
 
     //Spawn a new thread if there are any available in the pool
     if(pool_.Size() < pool_.MaxSize()) {
-        pool_.Assign();
+        pool_.Assign(this);
     }
 
     //Enqueue work in existing thread
@@ -144,7 +144,7 @@ bool sentinel::worker_manager::Server::FinalizeWorkerManager() {
  * THREAD
  * */
 
-sentinel::worker_manager::Worker::Worker() {
+sentinel::worker_manager::Worker::Worker():server_() {
     AUTO_TRACER("sentinel::worker_manager::Worker::Worker");
     thread_timeout_ms_ = SENTINEL_CONF->WORKERTHREAD_TIMOUT_MS;
 }
@@ -185,8 +185,9 @@ void sentinel::worker_manager::Worker::GetAndExecuteTask() {
     ExecuteTask(GetTask());
 }
 
-void sentinel::worker_manager::Worker::Run(std::future<void> loop_cond) {
+void sentinel::worker_manager::Worker::Run(std::future<void> loop_cond,Server* server) {
     AUTO_TRACER("sentinel::worker_manager::Worker::Run", task_id);
+    server_=server;
     bool kill_if_empty = false;
     do {
         if(queue_.Size() == 0) {
@@ -213,5 +214,14 @@ int sentinel::worker_manager::Worker::GetQueueDepth() {
 }
 
 bool sentinel::worker_manager::Worker::EmitCallback(uint32_t job_id, uint32_t current_task_id, Event &output_event) {
+    auto next_tasks = basket::Singleton<sentinel::job_manager::client>::GetInstance()->GetNextNode(job_id, current_task_id,output_event);
+    for(auto next_task:next_tasks){
+        uint32_t worker_index=std::get<0>(next_task);
+        uint32_t worker_thread_id=std::get<1>(next_task);
+        uint32_t next_task_id=std::get<2>(next_task);
+        if(BASKET_CONF->MPI_RANK == worker_index){
+
+        }
+    }
     return false;
 }

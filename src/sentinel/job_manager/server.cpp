@@ -13,7 +13,7 @@ void sentinel::job_manager::Server::RunInternal(std::future<void> futureObj) {
     }
 }
 
-bool sentinel::job_manager::Server::SubmitJob(uint32_t jobId){
+bool sentinel::job_manager::Server::SubmitJob(uint32_t jobId, uint32_t num_sources){
     auto classLoader = ClassLoader();
     std::shared_ptr<Job<Event>> job = classLoader.LoadClass<Job<Event>>(jobId);
     jobs.insert(std::make_pair(jobId, job));
@@ -25,13 +25,21 @@ bool sentinel::job_manager::Server::SubmitJob(uint32_t jobId){
     SpawnWorkerManagers(defaultResourceAllocation);
 
     auto workermanager_client = basket::Singleton<sentinel::worker_manager::Client>::GetInstance();
-    workmanager_id workermanager = used_resources.at(jobId).at(0);
 
     auto collector = job->GetTask();
-    workermanager_client->AssignTask(workermanager, jobId, collector->id_);
-    //Lets ensure that load map is not empty
-    WorkerManagerStats wms = WorkerManagerStats();
-    UpdateWorkerManagerStats(workermanager, wms);
+
+    for(int i=0;i<num_sources;i++){
+        workmanager_id workermanager;
+        if(i==0) workermanager = used_resources.at(jobId).at(0);
+        else workermanager = reversed_loadMap.begin()->second;
+        Event event;
+        event.id_ = std::to_string(i);
+        workermanager_client->AssignTask(workermanager, jobId, collector->id_,event);
+        //Lets ensure that load map is not empty
+        WorkerManagerStats wms = WorkerManagerStats();
+        UpdateWorkerManagerStats(workermanager, wms);
+    }
+
 }
 
 bool sentinel::job_manager::Server::TerminateJob(uint32_t jobId){
