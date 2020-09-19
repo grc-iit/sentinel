@@ -78,15 +78,16 @@ std::pair<bool, WorkerManagerStats> sentinel::job_manager::Server::GetWorkerMana
     return std::pair<bool, WorkerManagerStats>(true, possible_load->second);
 }
 
-std::tuple<uint32_t, uint16_t, task_id> sentinel::job_manager::Server::GetNextNode(uint32_t job_id, uint32_t currentTaskId, Event event){
+std::vector<std::tuple<uint32_t, uint16_t, task_id>> sentinel::job_manager::Server::GetNextNode(uint32_t job_id, uint32_t currentTaskId, Event event){
 
     auto newTasks = jobs.at(currentTaskId)->GetTask(currentTaskId)->links;
+    auto next_tasks = std::vector<std::tuple<uint32_t, uint16_t, task_id>>();
     for(auto task:newTasks){
 
         switch(task->type_){
             case TaskType::SOURCE:{
                 workmanager_id newWorkermanager = reversed_loadMap.begin()->second;
-                return std::tuple<uint32_t,uint16_t, task_id>(newWorkermanager, 0, task->id_);
+                next_tasks.push_back(std::tuple<uint32_t,uint16_t, task_id>(newWorkermanager, 0, task->id_));
             }
             case TaskType::KEYBY:{
                 KeyByTask<Event>* task_= (KeyByTask<Event>*)((void*)&task);
@@ -100,16 +101,16 @@ std::tuple<uint32_t, uint16_t, task_id> sentinel::job_manager::Server::GetNextNo
                         auto hash = task_->Execute(event);
                         auto worker_index = hash % total_workers;
                         uint16_t worker_thread_id = worker_thread_hash(hash) % SENTINEL_CONF->WORKERTHREAD_COUNT;
-                        return std::tuple<uint32_t,uint16_t, task_id>(worker_index,worker_thread_id , task->id_);
+                        next_tasks.push_back( std::tuple<uint32_t,uint16_t, task_id>(worker_index,worker_thread_id , task->id_));
                     }
                 }else{
                     workmanager_id newWorkermanager = reversed_loadMap.begin()->second;
-                    return std::tuple<uint32_t,uint16_t, task_id>(newWorkermanager, 0, task->id_);
+                    next_tasks.push_back( std::tuple<uint32_t,uint16_t, task_id>(newWorkermanager, 0, task->id_));
                 }
             }
             case TaskType::SINK:{
                 workmanager_id newWorkermanager = reversed_loadMap.begin()->second;
-                return std::tuple<uint32_t,uint16_t, task_id>(newWorkermanager, 0, task->id_);
+                next_tasks.push_back( std::tuple<uint32_t,uint16_t, task_id>(newWorkermanager, 0, task->id_));
             }
         }
     }
