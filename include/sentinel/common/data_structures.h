@@ -31,51 +31,87 @@ typedef struct Event: public Data{
     }
 }Event;
 
-typedef struct Task{
+template<typename E>
+struct Task{
+public:
+    uint32_t job_id_;
     uint32_t id_;
+    TaskType type_;
     std::vector<std::shared_ptr<Task>> links;
-    Task():links(){}
-    Task(const Task &other):id_(other.id_),links(other.links){};
-    Task(Task &&other):id_(other.id_),links(other.links){};
+
+    Task(TaskType type=TaskType::SOURCE):links(),type_(type){}
+    Task(const Task &other):id_(other.id_),job_id_(other.job_id_),links(other.links),type_(other.type_){};
+    Task(Task &&other):id_(other.id_),job_id_(other.job_id_),links(other.links),type_(other.type_){};
     Task &operator=(const Task &other){
         id_ = other.id_;
         links = other.links;
+        job_id_=other.job_id_;
+        type_=other.type_;
         return *this;
     }
 
-    virtual void Execute(){
-        printf("Test task's execute function....\n");
+    bool EmitCallback(std::function<bool(uint32_t, uint32_t, Event &)> &func){
+        emit=func;
+        return true;
     }
-}Task;
-
-typedef struct SourceTask: public Task{
-    SourceTask():Task(){}
-
-    virtual void Execute(){
-        printf("Test SourceTask's execute function....\n");
-    }
-}SourceTask;
-
-typedef struct KeyByTask: public Task{
-    KeyByTask():Task(){}
-
-    virtual void Execute(){
-        printf("Test KeyByTask's execute function....\n");
-    }
-}KeyByTask;
-
-typedef struct SinkTask: public Task{
-    SinkTask():Task(){}
-
-    virtual void Execute(){
-        printf("Test SinkTask's execute function....\n");
-    }
-}SinkTask;
-
-typedef struct Job{
 protected:
-    std::shared_ptr<Task> source_;
-    std::shared_ptr<Task> FindTask(uint32_t task_id_, std::shared_ptr<Task> &currentTask){
+
+    std::function<bool(uint32_t, uint32_t, Event &)> emit;
+
+};
+template<typename E, typename std::enable_if<std::is_base_of<Event, E>::value>::type * = nullptr>
+struct SourceTask: public Task<E>{
+    SourceTask():Task<E>(TaskType::SOURCE){}
+    SourceTask(Task<E> t):Task<E>(t){}
+    virtual E Execute(E &event){
+        bool status = true;
+        status = status && Initialize(event);
+        E output;
+        if(status) output = Run(event);
+        status = status && Finalize(event);
+        return output;
+    }
+protected:
+    virtual bool Initialize(E &event) = 0;
+    virtual E Run(E &event) = 0;
+    virtual bool Finalize(E &event) = 0;
+};
+template<typename E,  typename std::enable_if<std::is_base_of<Event, E>::value>::type * = nullptr>
+struct KeyByTask: public Task<E>{
+    KeyByTask():Task<E>(TaskType::KEYBY){}
+    virtual size_t Execute(E &event){
+        bool status = true;
+        status = status && Initialize(event);
+        size_t output;
+        if(status) output = Run(event);
+        status = status && Finalize(event);
+        return output;
+    }
+protected:
+    virtual bool Initialize(E &event) = 0;
+    virtual size_t Run(E &event) = 0;
+    virtual bool Finalize(E &event) = 0;
+};
+template<typename E, typename std::enable_if<std::is_base_of<Event, E>::value>::type * = nullptr>
+struct SinkTask: public Task<E>{
+    SinkTask():Task<E>(TaskType::SINK){}
+    virtual void Execute(E &event){
+        bool status = true;
+        status = status && Initialize(event);
+        if(status) Run(event);
+        status = status && Finalize(event);
+    }
+protected:
+    virtual bool Initialize(E &event) = 0;
+    virtual void Run(E &event) = 0;
+    virtual bool Finalize(E &event) = 0;
+};
+
+template<typename E, typename std::enable_if<std::is_base_of<Event, E>::value>::type * = nullptr>
+struct Job{
+protected:
+    std::shared_ptr<Task<E>> source_;
+    std::shared_ptr<Task<E>> FindTask(uint32_t task_id_, std::shared_ptr<Task<E>> &currentTask){
         if(task_id_ == currentTask->id_) return currentTask;
         else for(auto link: currentTask->links ) {
             auto task = FindTask(task_id_, link);
@@ -84,24 +120,26 @@ protected:
         return NULL;
     }
 public:
-    Job(): source_(){}
-    Job(const Job &other): source_(other.source_) {}
-    Job(Job &other): source_(other.source_) {}
+    uint32_t job_id_;
+    Job(uint32_t job_id): source_(),job_id_(job_id){}
+    Job(const Job &other): source_(other.source_),job_id_(other.job_id_) {}
+    Job(Job &other): source_(other.source_),job_id_(other.job_id_) {}
     /*Define Assignment Operator*/
     Job &operator=(const Job &other){
         source_ = other.source_;
+        job_id_=other.job_id_;
         return *this;
     }
 
-    std::shared_ptr<Task> GetTask(uint32_t task_id_=0){
-        //Task id = 0 is the collecotr
+    std::shared_ptr<Task<E>> GetTask(uint32_t task_id_=0){
+        //Task id = 0 is the collector
         if(task_id_==0) return source_;
         else return FindTask(task_id_, source_);
     }
 
-    virtual void CreateDag()=0;
+    virtual void CreateDAG()=0;
 
-}Job;
+};
 
 
 typedef struct ResourceAllocation {
@@ -274,126 +312,9 @@ namespace clmdep_msgpack {
                     o.via.array.ptr[2] = mv1::object(input.num_threads_per_proc, o.zone);
                 }
             };
-
-            template<>
-            struct convert<Task> {
-                mv1::object const &operator()(mv1::object const &o, Task &input) const {
-                    input.links = o.via.array.ptr[0].as<std::vector<std::shared_ptr<Task>>>();
-                    return o;
-                }
-            };
-
-            template<>
-            struct pack<Task>{
-                template<typename Stream>
-                packer <Stream> &operator()(mv1::packer <Stream> &o, Task const &input) const {
-                    o.pack_array(1);
-                    o.pack(input.links);
-                    return o;
-                }
-            };
-
-            template<>
-            struct object_with_zone<Task> {
-                void operator()(mv1::object::with_zone &o, Task const &input) const {
-                    o.type = type::ARRAY;
-                    o.via.array.size = 1;
-                    o.via.array.ptr = static_cast<clmdep_msgpack::object *>(o.zone.allocate_align(
-                            sizeof(mv1::object) * o.via.array.size, MSGPACK_ZONE_ALIGNOF(mv1::object)));
-                    o.via.array.ptr[0] = mv1::object(input.links, o.zone);
-                }
-            };
-
-            template<>
-            struct convert<SourceTask> {
-                mv1::object const &operator()(mv1::object const &o, SourceTask &input) const {
-                    input.links = o.via.array.ptr[0].as<std::vector<std::shared_ptr<Task>>>();
-                    return o;
-                }
-            };
-
-            template<>
-            struct pack<SourceTask>{
-                template<typename Stream>
-                packer <Stream> &operator()(mv1::packer <Stream> &o, SourceTask const &input) const {
-                    o.pack_array(1);
-                    o.pack(input.links);
-                    return o;
-                }
-            };
-
-            template<>
-            struct object_with_zone<SourceTask> {
-                void operator()(mv1::object::with_zone &o, SourceTask const &input) const {
-                    o.type = type::ARRAY;
-                    o.via.array.size = 1;
-                    o.via.array.ptr = static_cast<clmdep_msgpack::object *>(o.zone.allocate_align(
-                            sizeof(mv1::object) * o.via.array.size, MSGPACK_ZONE_ALIGNOF(mv1::object)));
-                    o.via.array.ptr[0] = mv1::object(input.links, o.zone);
-                }
-            };
-
-            template<>
-            struct convert<KeyByTask> {
-                mv1::object const &operator()(mv1::object const &o, KeyByTask &input) const {
-                    input.links = o.via.array.ptr[0].as<std::vector<std::shared_ptr<Task>>>();
-                    return o;
-                }
-            };
-
-            template<>
-            struct pack<KeyByTask>{
-                template<typename Stream>
-                packer <Stream> &operator()(mv1::packer <Stream> &o, KeyByTask const &input) const {
-                    o.pack_array(1);
-                    o.pack(input.links);
-                    return o;
-                }
-            };
-
-            template<>
-            struct object_with_zone<KeyByTask> {
-                void operator()(mv1::object::with_zone &o, KeyByTask const &input) const {
-                    o.type = type::ARRAY;
-                    o.via.array.size = 1;
-                    o.via.array.ptr = static_cast<clmdep_msgpack::object *>(o.zone.allocate_align(
-                            sizeof(mv1::object) * o.via.array.size, MSGPACK_ZONE_ALIGNOF(mv1::object)));
-                    o.via.array.ptr[0] = mv1::object(input.links, o.zone);
-                }
-            };
-
-            template<>
-            struct convert<SinkTask> {
-                mv1::object const &operator()(mv1::object const &o, SinkTask &input) const {
-                    input.links = o.via.array.ptr[0].as<std::vector<std::shared_ptr<Task>>>();
-                    return o;
-                }
-            };
-
-            template<>
-            struct pack<SinkTask>{
-                template<typename Stream>
-                packer <Stream> &operator()(mv1::packer <Stream> &o, SinkTask const &input) const {
-                    o.pack_array(1);
-                    o.pack(input.links);
-                    return o;
-                }
-            };
-
-            template<>
-            struct object_with_zone<SinkTask> {
-                void operator()(mv1::object::with_zone &o, SinkTask const &input) const {
-                    o.type = type::ARRAY;
-                    o.via.array.size = 1;
-                    o.via.array.ptr = static_cast<clmdep_msgpack::object *>(o.zone.allocate_align(
-                            sizeof(mv1::object) * o.via.array.size, MSGPACK_ZONE_ALIGNOF(mv1::object)));
-                    o.via.array.ptr[0] = mv1::object(input.links, o.zone);
-                }
-            };
-
-        }  // namespace adaptor
+        }
     }
-}  // namespace clmdep_msgpack
+};
 
 std::ostream &operator<<(std::ostream &os, Data &data);
 

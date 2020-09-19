@@ -15,7 +15,8 @@ int main()
     }
     for(int i = 0; i < tp_sz; ++i) {
         auto worker = pool.Get(i);
-        worker->Enqueue(sentinel::worker_manager::TaskID(i,i));
+        Event e;
+        worker->Enqueue(std::tuple<uint32_t,uint32_t,Event>(i,i,e));
     }
     pool.WaitAll();
 }

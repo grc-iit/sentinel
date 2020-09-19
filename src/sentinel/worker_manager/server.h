@@ -11,28 +11,25 @@
 #include <basket.h>
 #include <sentinel/common/debug.h>
 #include <common/daemon.h>
+#include <sentinel/common/data_structures.h>
 
 namespace sentinel::worker_manager {
 
-struct TaskID {
-    uint32_t job_id_ = 0;
-    uint32_t task_id_ = 0;
 
-    TaskID() = default;
-    TaskID(uint32_t job_id, uint32_t task_id): job_id_(job_id), task_id_(task_id) {}
-};
 
 class Worker {
 private:
-    sentinel::Queue<TaskID> queue_;
+    sentinel::Queue<std::tuple<uint32_t,uint32_t,Event>> queue_;
     uint32_t thread_timeout_ms_;
+
 public:
     Worker();
-    TaskID GetTask();
+    std::tuple<uint32_t,uint32_t,Event> GetTask();
     void GetAndExecuteTask();
-    void ExecuteTask(TaskID task_id);
+    void ExecuteTask(std::tuple<uint32_t,uint32_t,Event> task_id);
+    bool EmitCallback(uint32_t job_id, uint32_t current_task_id, Event &output_event);
     void Run(std::future<void> loop_cond);
-    void Enqueue(TaskID task_id);
+    void Enqueue(std::tuple<uint32_t,uint32_t,Event> task_id);
     int GetQueueDepth();
 };
 
@@ -54,7 +51,7 @@ public:
     Server();
     void Init();
     void Run(std::future<void> loop_cond, common::Daemon<Server> * obj);
-    bool AssignTask(uint32_t job_id, uint32_t task_id);
+    bool AssignTask(uint32_t job_id, uint32_t task_id, Event &event);
     bool FinalizeWorkerManager();
 };
 

@@ -18,7 +18,7 @@ typedef struct Job1: public Job{
     }
     std::shared_ptr<Task> GetTask(uint32_t task_id_){
         printf("Begin to create Task in Job1....\n");
-        return std::make_shared<Task>();
+        //return std::make_shared<Task>();
     }
 
     uint32_t GetNextTaskId(uint32_t task_id_){
@@ -29,7 +29,7 @@ typedef struct Job1: public Job{
 
 extern "C" std::shared_ptr<Job> create_job_1() {
     printf("Begin to create object.....\n");
-    return basket::Singleton<Job1>::GetInstance();
+    //return basket::Singleton<Job1>::GetInstance();
 }
 extern "C" void free_job_1(Job* p) { delete p; }
 
