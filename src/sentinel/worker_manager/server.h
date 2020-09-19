@@ -10,6 +10,7 @@
 #include "queue.h"
 #include <basket.h>
 #include <sentinel/common/debug.h>
+#include <common/daemon.h>
 
 namespace sentinel::worker_manager {
 
@@ -48,10 +49,11 @@ private:
     bool UpdateJobManager();
     std::shared_ptr<sentinel::worker_manager::Worker> FindMinimumQueue();
     int GetNumTasksQueued(void);
+    common::Daemon<Server> * daemon;
 public:
     Server();
     void Init();
-    void Run(std::future<void> loop_cond);
+    void Run(std::future<void> loop_cond, common::Daemon<Server> * obj);
     bool AssignTask(uint32_t job_id, uint32_t task_id);
     bool FinalizeWorkerManager();
 };

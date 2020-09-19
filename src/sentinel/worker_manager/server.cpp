@@ -44,7 +44,8 @@ void sentinel::worker_manager::Server::Init() {
     client_rpc_->bind("FinalizeWorkerManager", functionFinalizeWorkerManager);
 }
 
-void sentinel::worker_manager::Server::Run(std::future<void> loop_cond) {
+void sentinel::worker_manager::Server::Run(std::future<void> loop_cond, common::Daemon<Server>* obj) {
+    daemon = obj;
     AUTO_TRACER("sentinel::worker_manager::Server::Run");
     while(loop_cond.wait_for(std::chrono::milliseconds(1)) == std::future_status::timeout) {}
 }
@@ -134,6 +135,8 @@ bool sentinel::worker_manager::Server::AssignTask(uint32_t job_id, uint32_t task
 bool sentinel::worker_manager::Server::FinalizeWorkerManager() {
     AUTO_TRACER("sentinel::worker_manager::Server::FinalizeWorkerManager");
     pool_.StopAll();
+    pool_.WaitAll();
+    daemon->Stop();
     return true;
 }
 

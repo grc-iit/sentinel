@@ -18,12 +18,14 @@
 #include <common/data_structure.h>
 #include <sentinel/worker_manager/client.h>
 #include <basket/common/singleton.h>
+#include <common/daemon.h>
 
 typedef uint32_t job_id, workmanager_id, task_id;
 
 namespace sentinel::job_manager{
     class Server {
     private:
+        common::Daemon<Server> * daemon;
         std::shared_ptr<RPC> rpc;
         std::unordered_map<workmanager_id, WorkerManagerStats> loadMap;
         std::map<WorkerManagerStats, workmanager_id> reversed_loadMap;
@@ -43,7 +45,7 @@ namespace sentinel::job_manager{
 
         void RunInternal(std::future<void> futureObj);
     public:
-        void Run(std::future<void> futureObj);
+        void Run(std::future<void> futureObj,common::Daemon<Server> * daemon);
 
         Server(){
             SENTINEL_CONF->ConfigureJobManagerServer();

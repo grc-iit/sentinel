@@ -1,11 +1,13 @@
 #include <sentinel/job_manager/Server.h>
 
 
-void sentinel::job_manager::Server::Run(std::future<void> futureObj) {
+void sentinel::job_manager::Server::Run(std::future<void> futureObj,common::Daemon<Server> * obj) {
+    daemon = obj;
     RunInternal(std::move(futureObj));
 }
 
 void sentinel::job_manager::Server::RunInternal(std::future<void> futureObj) {
+
     while(futureObj.wait_for(std::chrono::milliseconds(1)) == std::future_status::timeout){
         usleep(10000);
     }
