@@ -139,14 +139,14 @@ namespace sentinel {
         }
 
     public:
-        CharStruct JOBMANAGER_HOST_FILE, WORKERMANAGER_HOST_FILE, BYTEFLOW_REGULATOR_HOST;
-        uint16_t JOBMANAGER_PORT, WORKERMANAGER_PORT, BYTEFLOW_REGULATOR_SERVER_PORT;
-        uint16_t JOBMANAGER_RPC_THREADS, WORKERMANAGER_RPC_THREADS, BYTEFLOW_REGULATOR_RPC_THREADS;
-        CharStruct JOBMANAGER_DIR, WORKERMANAGER_DIR, BYTEFLOW_REGULATOR_DIR;
+        CharStruct JOBMANAGER_HOST_FILE, WORKERMANAGER_HOST_FILE;
+        uint16_t JOBMANAGER_PORT, WORKERMANAGER_PORT;
+        uint16_t JOBMANAGER_RPC_THREADS, WORKERMANAGER_RPC_THREADS;
+        CharStruct JOBMANAGER_DIR, WORKERMANAGER_DIR;
         CharStruct CONFIGURATION_FILE;
         CharStruct WORKERMANAGER_DINAMIC_HOSTFILE;
         CharStruct WORKERMANAGER_EXECUTABLE;
-        uint16_t JOBMANAGER_COUNT, WORKERMANAGER_COUNT, BYTEFLOW_REGULATOR_COUNT;
+        uint16_t JOBMANAGER_COUNT, WORKERMANAGER_COUNT;
         uint16_t WORKERTHREAD_COUNT, WORKERMANAGER_EPOCH_MS, WORKERMANAGER_UPDATE_MIN_TASKS, WORKERTHREAD_TIMOUT_MS;
         uint16_t RANDOM_SEED;
         uint16_t MAX_LOAD;
@@ -157,16 +157,12 @@ namespace sentinel {
 
         ConfigurationManager() : JOBMANAGER_HOST_FILE("/home/user/symbios/conf/server_lists/single_node_rhea_jobmanager"),
                                  WORKERMANAGER_HOST_FILE("/home/user/symbios/conf/server_lists/single_node_rhea_workermanager"),
-                                 BYTEFLOW_REGULATOR_HOST("/home/user/symbios/conf/server_lists/single_node_rhea_byteflow_regulator"),
                                  JOBMANAGER_PORT(8000),
                                  WORKERMANAGER_PORT(9000),
-                                 BYTEFLOW_REGULATOR_SERVER_PORT(10000),
                                  JOBMANAGER_RPC_THREADS(4),
                                  WORKERMANAGER_RPC_THREADS(4),
-                                 BYTEFLOW_REGULATOR_RPC_THREADS(4),
                                  DEFAULT_RESOURCE_ALLOCATION(0, 1,1,1),
                                  JOBMANAGER_DIR("/dev/shm/hari/single_node_jobmanager_server"), //TODO: CHECK if they have to be different
-                                 BYTEFLOW_REGULATOR_DIR("/dev/shm/hari/single_node_byteflow_regulator_server"),
                                  WORKERMANAGER_DIR("/dev/shm/hari/single_node_workermanager_server"),
                                  CONFIGURATION_FILE("/home/user/sentinel/conf/base_rhea.conf"),
                                  WORKERMANAGER_DINAMIC_HOSTFILE("/home/user/symbios/conf/server_lists/single_node_rhea_dyn_workermanager"),
@@ -177,7 +173,6 @@ namespace sentinel {
                                  WORKERMANAGER_EPOCH_MS(50),
                                  WORKERMANAGER_UPDATE_MIN_TASKS(256),
                                  WORKERTHREAD_TIMOUT_MS(100),
-                                 BYTEFLOW_REGULATOR_COUNT(1),
                                  MAX_LOAD(0.8),
                                  RANDOM_SEED(100){}
 
@@ -215,8 +210,6 @@ namespace sentinel {
             config(doc, "WORKERMANAGER_EPOCH_MS", WORKERMANAGER_EPOCH_MS);
             config(doc, "WORKERMANAGER_UPDATE_MIN_TASKS", WORKERMANAGER_UPDATE_MIN_TASKS);
             config(doc, "WORKERTHREAD_TIMOUT_MS", WORKERTHREAD_TIMOUT_MS);
-            config(doc, "BYTEFLOW_REGULATOR_SERVER_PORT", BYTEFLOW_REGULATOR_SERVER_PORT);
-            config(doc, "BYTEFLOW_REGULATOR_HOST", BYTEFLOW_REGULATOR_HOST);
             config(doc, "RANDOM_SEED", RANDOM_SEED);
             boost::filesystem::create_directories(JOBMANAGER_DIR.c_str());
             boost::filesystem::create_directories(WORKERMANAGER_DIR.c_str());
@@ -256,23 +249,7 @@ namespace sentinel {
             BASKET_CONF->RPC_PORT = WORKERMANAGER_PORT;
         }
 
-        void ConfigureByteflowRegulatorClient() {
-            LoadConfiguration();
-            //port, SERVER_LIST
-            BASKET_CONF->ConfigureDefaultClient(BYTEFLOW_REGULATOR_HOST.c_str());
-            BASKET_CONF->RPC_PORT = BYTEFLOW_REGULATOR_SERVER_PORT;
-        }
 
-        void ConfigureByteflowRegulatorServer() {
-            LoadConfiguration();
-            //port, list of servers, server dir,
-            BASKET_CONF->RPC_THREADS = BYTEFLOW_REGULATOR_RPC_THREADS;
-            BASKET_CONF->MEMORY_ALLOCATED = 1024ULL * 1024ULL * 1ULL;
-            BASKET_CONF->BACKED_FILE_DIR=BYTEFLOW_REGULATOR_DIR;
-            BASKET_CONF->ConfigureDefaultServer(BYTEFLOW_REGULATOR_HOST.c_str());
-            BYTEFLOW_REGULATOR_COUNT = BASKET_CONF->NUM_SERVERS;
-            BASKET_CONF->RPC_PORT = BYTEFLOW_REGULATOR_SERVER_PORT;
-        }
 
     };
 }

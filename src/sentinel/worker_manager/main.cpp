@@ -3,7 +3,7 @@
 //
 
 #include <basket/common/singleton.h>
-#include <sentinel/common/daemon.h>
+#include <common/daemon.h>
 #include <sentinel/common/configuration_manager.h>
 #include "server.h"
 #include <mpi.h>

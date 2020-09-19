@@ -1,6 +1,6 @@
 #include <mpi.h>
 #include <basket.h>
-#include <sentinel/common/daemon.h>
+#include <common/daemon.h>
 #include <sentinel/job_manager/Server.h>
 #include <sentinel/common/configuration_manager.h>
 

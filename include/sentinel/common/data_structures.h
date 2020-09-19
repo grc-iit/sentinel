@@ -12,28 +12,36 @@
 
 #include <basket.h>
 #include <common/data_structure.h>
+#include <sentinel/common/enumerations.h>
 #include <vector>
 
 typedef struct Event: public Data{
 
+    OperationType type_;
     /*Define the default, copy and move constructor*/
-    Event(): Data(){}
-    Event(CharStruct id_, size_t position_, char *buffer_, uint16_t storage_index_, size_t data_size_): Data(id_, position_, buffer_, storage_index_,data_size_){}
+    Event(): Data(),type_(){}
 
-    Event(const Event &other): Data(other){}
-    Event(Event &other): Data(other){}
+    Event(const Event &other): Data(other),type_(other.type_){}
+    Event(Event &other): Data(other),type_(other.type_){}
     /*Define Assignment Operator*/
     Event &operator=(const Event &other){
         Data::operator=(other);
+        type_ = other.type_;
         return *this;
     }
 }Event;
 
 typedef struct Task{
-
+    uint32_t id_;
     std::vector<std::shared_ptr<Task>> links;
-
     Task():links(){}
+    Task(const Task &other):id_(other.id_),links(other.links){};
+    Task(Task &&other):id_(other.id_),links(other.links){};
+    Task &operator=(const Task &other){
+        id_ = other.id_;
+        links = other.links;
+        return *this;
+    }
 
     virtual void Execute(){
         printf("Test task's execute function....\n");
@@ -65,9 +73,17 @@ typedef struct SinkTask: public Task{
 }SinkTask;
 
 typedef struct Job{
-
+protected:
     std::shared_ptr<Task> source_;
-
+    std::shared_ptr<Task> FindTask(uint32_t task_id_, std::shared_ptr<Task> &currentTask){
+        if(task_id_ == currentTask->id_) return currentTask;
+        else for(auto link: currentTask->links ) {
+            auto task = FindTask(task_id_, link);
+            if(task != NULL) return task;
+        }
+        return NULL;
+    }
+public:
     Job(): source_(){}
     Job(const Job &other): source_(other.source_) {}
     Job(Job &other): source_(other.source_) {}
@@ -76,20 +92,14 @@ typedef struct Job{
         source_ = other.source_;
         return *this;
     }
-    std::shared_ptr<Task> GetTask(uint32_t task_id_){
-        printf("Begin to create Task....\n");
-        return std::make_shared<Task>();
+
+    std::shared_ptr<Task> GetTask(uint32_t task_id_=0){
+        //Task id = 0 is the collecotr
+        if(task_id_==0) return source_;
+        else return FindTask(task_id_, source_);
     }
 
-    uint32_t GetNextTaskId(uint32_t task_id_){
-        printf("Test Job's test function....\n");
-        return task_id_ + 1;
-    }
-
-    uint32_t GetCollectorId(){
-        printf("Give me collector....\n");
-        return 1;
-    }
+    virtual void CreateDag()=0;
 
 }Job;
 
