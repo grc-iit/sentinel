@@ -15,6 +15,7 @@
 #include <basket.h>
 #include <thread>
 #include <limits>
+#include <sentinel/worker_manager/client.h>
 
 /*
  * SERVER
@@ -220,8 +221,10 @@ bool sentinel::worker_manager::Worker::EmitCallback(uint32_t job_id, uint32_t cu
         uint32_t worker_thread_id=std::get<1>(next_task);
         uint32_t next_task_id=std::get<2>(next_task);
         if(BASKET_CONF->MPI_RANK == worker_index){
-
+            server_->AssignTask(job_id,next_task_id,output_event);
+        }else{
+            basket::Singleton<sentinel::worker_manager::Client>::GetInstance()->AssignTask(worker_index, job_id,next_task_id, output_event);
         }
     }
-    return false;
+    return true;
 }

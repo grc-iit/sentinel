@@ -24,7 +24,10 @@
 namespace sentinel {
     class ConfigurationManager: public common::ConfigurationManager {
     protected:
-        void LoadChildConfigurations(rapidjson::Document &doc) override {
+
+        void LoadChildConfigurations(void *doc_) override {
+            rapidjson::Document* doc=NULL;
+           if(doc !=NULL) doc = (rapidjson::Document*)doc_;
             config(doc, "JOBMANAGER_LISTS", JOBMANAGER_HOST_FILE);
             config(doc, "WORKERMANAGER_HOST_FILE", WORKERMANAGER_HOST_FILE);
             config(doc, "JOBMANAGER_PORT", JOBMANAGER_PORT);
@@ -63,18 +66,18 @@ namespace sentinel {
         std::vector<CharStruct> WORKERMANAGER_LISTS;
 
 
-        ConfigurationManager() : JOBMANAGER_HOST_FILE("/home/user/symbios/conf/server_lists/single_node_rhea_jobmanager"),
-                                 WORKERMANAGER_HOST_FILE("/home/user/symbios/conf/server_lists/single_node_rhea_workermanager"),
-                                 JOBMANAGER_PORT(8000),
-                                 WORKERMANAGER_PORT(9000),
+        ConfigurationManager() : JOBMANAGER_HOST_FILE("${HOME}/server_lists"),
+                                 WORKERMANAGER_HOST_FILE("${HOME}/server_lists"),
+                                 JOBMANAGER_PORT(9000),
+                                 WORKERMANAGER_PORT(10000),
                                  JOBMANAGER_RPC_THREADS(4),
                                  WORKERMANAGER_RPC_THREADS(4),
                                  DEFAULT_RESOURCE_ALLOCATION(0, 1,1,1),
                                  JOBMANAGER_DIR("/dev/shm/hari/single_node_jobmanager_server"), //TODO: CHECK if they have to be different
                                  WORKERMANAGER_DIR("/dev/shm/hari/single_node_workermanager_server"),
                                  CONFIGURATION_FILE("/home/user/sentinel/conf/base_rhea.conf"),
-                                 WORKERMANAGER_DINAMIC_HOSTFILE("/home/user/symbios/conf/server_lists/single_node_rhea_dyn_workermanager"),
-                                 WORKERMANAGER_EXECUTABLE("/home/user/symbios/build/workermanager_server"),
+                                 WORKERMANAGER_DINAMIC_HOSTFILE("${HOME}/server_lists"),
+                                 WORKERMANAGER_EXECUTABLE("/home/hdevarajan/projects/rhea/build/sentinel/sentinel_worker_manager"),
                                  JOBMANAGER_COUNT(1),
                                  WORKERMANAGER_COUNT(1),
                                  WORKERTHREAD_COUNT(4),
