@@ -11,4 +11,10 @@ enum class OperationType{
 };
 MSGPACK_ADD_ENUM(OperationType);
 
+enum class TaskType{
+    SOURCE=0,
+    SINK=1,
+    KEYBY=2
+};
+MSGPACK_ADD_ENUM(TaskType);
 #endif //SENTINEL_COMMON_ENUMERATIONS_H

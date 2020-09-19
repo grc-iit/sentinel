@@ -20,7 +20,7 @@ namespace sentinel::job_manager {
     public:
         client();
 
-        bool SubmitJob(uint32_t jobId);
+        bool SubmitJob(uint32_t jobId, uint32_t num_sources);
 
         bool TerminateJob(uint32_t jobId);
 
@@ -28,7 +28,7 @@ namespace sentinel::job_manager {
 
         std::pair<bool, WorkerManagerStats> GetWorkerManagerStats(uint32_t workerManagerId);
 
-        std::pair<uint32_t, uint32_t> GetNextNode(uint32_t workermanagerId, uint32_t currentTaskId);
+        std::vector<std::tuple<uint32_t, uint16_t, uint32_t>> GetNextNode(uint32_t job_id, uint32_t currentTaskId, Event event);
 
         bool ChangeResourceAllocation(ResourceAllocation &resourceAllocation);
 

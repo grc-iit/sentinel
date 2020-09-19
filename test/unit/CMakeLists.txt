@@ -9,7 +9,7 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${INCLUDE_DIRS}")
 include_directories(${CMAKE_SOURCE_DIR}/scs_io_common/include)
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/job_so)
-set(test_files  job_1 job_2)
+set(test_files )
 foreach (test_file ${test_files})
     set(job ${test_file})
     set(JOB_SRC ${CMAKE_SOURCE_DIR}/sentinel/test/unit/class_loader/${test_file}/test.cpp)
