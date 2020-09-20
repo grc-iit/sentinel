@@ -10,9 +10,9 @@ sentinel::job_manager::client::client(){
     rpc=basket::Singleton<RPCFactory>::GetInstance()->GetRPC(BASKET_CONF->RPC_PORT);
 }
 
-bool sentinel::job_manager::client::SubmitJob(uint32_t jobId) {
+bool sentinel::job_manager::client::SubmitJob(uint32_t jobId, uint32_t num_sources) {
     int server = 0;
-    auto num_servers = rpc->call<RPCLIB_MSGPACK::object_handle>(server, "SubmitJob", jobId) .as<bool>();
+    auto num_servers = rpc->call<RPCLIB_MSGPACK::object_handle>(server, "SubmitJob", jobId,num_sources) .as<bool>();
 }
 
 bool sentinel::job_manager::client::TerminateJob(uint32_t jobId) {
@@ -30,9 +30,9 @@ std::pair<bool, WorkerManagerStats> sentinel::job_manager::client::GetWorkerMana
     auto ret = rpc->call<RPCLIB_MSGPACK::object_handle>(server, "GetWorkerManagerStats", workerManagerId).as<std::pair<bool, WorkerManagerStats>>();
 }
 
-std::pair<uint32_t, uint32_t> sentinel::job_manager::client::GetNextNode(uint32_t workermanagerId, uint32_t currentTaskId) {
+std::vector<std::tuple<uint32_t, uint16_t, uint32_t>> sentinel::job_manager::client::GetNextNode(uint32_t job_id, uint32_t currentTaskId, Event event) {
     int server = 0;
-    return rpc->call<RPCLIB_MSGPACK::object_handle>(server, "GetNextNode", workermanagerId, currentTaskId).as<std::pair<uint32_t, uint32_t>>();
+    return rpc->call<RPCLIB_MSGPACK::object_handle>(server, "GetNextNode", job_id, currentTaskId, event).as<std::vector<std::tuple<uint32_t, uint16_t, uint32_t>>>();
 }
 
 bool sentinel::job_manager::client::ChangeResourceAllocation(ResourceAllocation &resourceAllocation) {

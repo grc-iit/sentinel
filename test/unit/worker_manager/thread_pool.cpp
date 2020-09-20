@@ -8,14 +8,16 @@
 int main()
 {
     int tp_sz = 16;
+    auto worker_manager = sentinel::worker_manager::Server();
     sentinel::ThreadPool<sentinel::worker_manager::Worker> pool;
     pool.Init(tp_sz);
     for(int i = 0; i < tp_sz; ++i) {
-        pool.Assign();
+        pool.Assign(&worker_manager);
     }
     for(int i = 0; i < tp_sz; ++i) {
         auto worker = pool.Get(i);
-        worker->Enqueue(sentinel::worker_manager::TaskID(i,i));
+        Event e;
+        worker->Enqueue(std::tuple<uint32_t,uint32_t,Event>(i,i,e));
     }
     pool.WaitAll();
 }

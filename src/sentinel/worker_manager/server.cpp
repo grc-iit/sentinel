@@ -15,6 +15,7 @@
 #include <basket.h>
 #include <thread>
 #include <limits>
+#include <sentinel/worker_manager/client.h>
 
 /*
  * SERVER
@@ -35,9 +36,9 @@ void sentinel::worker_manager::Server::Init() {
     AUTO_TRACER("sentinel::worker_manager::Server::Init");
     client_rpc_ = basket::Singleton<RPCFactory>::GetInstance()->GetRPC(BASKET_CONF->RPC_PORT);
 
-    std::function<bool(uint32_t, uint32_t)> functionAssignTask(std::bind(
+    std::function<bool(uint32_t, uint32_t,Event &)> functionAssignTask(std::bind(
             &sentinel::worker_manager::Server::AssignTask,
-            this, std::placeholders::_1, std::placeholders::_2));
+            this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
     client_rpc_->bind("AssignTask", functionAssignTask);
 
     std::function<bool(void)>  functionFinalizeWorkerManager(std::bind(&sentinel::worker_manager::Server::FinalizeWorkerManager, this));
@@ -112,17 +113,17 @@ bool sentinel::worker_manager::Server::UpdateJobManager() {
     return check;
 }
 
-bool sentinel::worker_manager::Server::AssignTask(uint32_t job_id, uint32_t task_id) {
+bool sentinel::worker_manager::Server::AssignTask(uint32_t job_id, uint32_t task_id, Event &event) {
     AUTO_TRACER("sentinel::worker_manager::Server::AssignTask", task_id);
 
     //Spawn a new thread if there are any available in the pool
     if(pool_.Size() < pool_.MaxSize()) {
-        pool_.Assign();
+        pool_.Assign(this);
     }
 
     //Enqueue work in existing thread
     std::shared_ptr<Worker> thread = FindMinimumQueue();
-    thread->Enqueue(TaskID(job_id, task_id));
+    thread->Enqueue(std::tuple<uint32_t,uint32_t,Event>(job_id, task_id,event));
     ++num_tasks_assigned_;
 
     //Update Job Manager
@@ -144,31 +145,50 @@ bool sentinel::worker_manager::Server::FinalizeWorkerManager() {
  * THREAD
  * */
 
-sentinel::worker_manager::Worker::Worker() {
+sentinel::worker_manager::Worker::Worker():server_() {
     AUTO_TRACER("sentinel::worker_manager::Worker::Worker");
     thread_timeout_ms_ = SENTINEL_CONF->WORKERTHREAD_TIMOUT_MS;
 }
 
-sentinel::worker_manager::TaskID sentinel::worker_manager::Worker::GetTask() {
+std::tuple<uint32_t,uint32_t,Event> sentinel::worker_manager::Worker::GetTask() {
     AUTO_TRACER("sentinel::worker_manager::Worker::GetTask");
-    TaskID id;
+    std::tuple<uint32_t,uint32_t,Event> id;
     queue_.Pop(id);
     return std::move(id);
 }
 
-void sentinel::worker_manager::Worker::ExecuteTask(TaskID id) {
+void sentinel::worker_manager::Worker::ExecuteTask(std::tuple<uint32_t,uint32_t,Event> id) {
     AUTO_TRACER("sentinel::worker_manager::Worker::ExecuteTask", task_id);
-    std::shared_ptr<Job> job = ClassLoader().LoadClass<Job>(id.job_id_);
-    std::shared_ptr<Task> task = job->GetTask(id.task_id_);
-    task->Execute();
+    std::shared_ptr<Job<Event>> job = ClassLoader().LoadClass<Job<Event>>(std::get<0>(id));
+    std::shared_ptr<Task<Event>> task = job->GetTask(std::get<1>(id));
+    std::function<bool(uint32_t job_id, uint32_t current_task_id, Event &output_event)> emit_function(std::bind(&sentinel::worker_manager::Worker::EmitCallback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+    task->EmitCallback(emit_function);
+    switch(task->type_){
+        case TaskType::SOURCE:{
+            SourceTask<Event>* task_= (SourceTask<Event>*)((void*)&task);
+            task_->Execute(std::get<2>(id));
+        }
+        case TaskType::KEYBY:{
+            KeyByTask<Event>* task_= (KeyByTask<Event>*)((void*)&task);
+            auto hash = task_->Execute(std::get<2>(id));
+            Event hash_event;
+            hash_event.id_=std::to_string(hash);
+            emit_function(task_->job_id_,task_->id_,hash_event);
+        }
+        case TaskType::SINK:{
+            SinkTask<Event>* task_= (SinkTask<Event>*)((void*)&task);
+            task_->Execute(std::get<2>(id));
+        }
+    }
 }
 
 void sentinel::worker_manager::Worker::GetAndExecuteTask() {
     ExecuteTask(GetTask());
 }
 
-void sentinel::worker_manager::Worker::Run(std::future<void> loop_cond) {
+void sentinel::worker_manager::Worker::Run(std::future<void> loop_cond,Server* server) {
     AUTO_TRACER("sentinel::worker_manager::Worker::Run", task_id);
+    server_=server;
     bool kill_if_empty = false;
     do {
         if(queue_.Size() == 0) {
@@ -184,7 +204,7 @@ void sentinel::worker_manager::Worker::Run(std::future<void> loop_cond) {
     } while(loop_cond.wait_for(std::chrono::milliseconds(thread_timeout_ms_))==std::future_status::timeout);
 }
 
-void sentinel::worker_manager::Worker::Enqueue(TaskID id) {
+void sentinel::worker_manager::Worker::Enqueue(std::tuple<uint32_t,uint32_t,Event> id) {
     AUTO_TRACER("sentinel::worker_manager::Worker::Enqueue", task_id);
     queue_.Push(id);
 }
@@ -192,4 +212,19 @@ void sentinel::worker_manager::Worker::Enqueue(TaskID id) {
 int sentinel::worker_manager::Worker::GetQueueDepth() {
     AUTO_TRACER("sentinel::worker_manager::Worker::GetQueueDepth");
     return queue_.Size();
+}
+
+bool sentinel::worker_manager::Worker::EmitCallback(uint32_t job_id, uint32_t current_task_id, Event &output_event) {
+    auto next_tasks = basket::Singleton<sentinel::job_manager::client>::GetInstance()->GetNextNode(job_id, current_task_id,output_event);
+    for(auto next_task:next_tasks){
+        uint32_t worker_index=std::get<0>(next_task);
+        uint32_t worker_thread_id=std::get<1>(next_task);
+        uint32_t next_task_id=std::get<2>(next_task);
+        if(BASKET_CONF->MPI_RANK == worker_index){
+            server_->AssignTask(job_id,next_task_id,output_event);
+        }else{
+            basket::Singleton<sentinel::worker_manager::Client>::GetInstance()->AssignTask(worker_index, job_id,next_task_id, output_event);
+        }
+    }
+    return true;
 }

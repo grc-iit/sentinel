@@ -10,7 +10,8 @@ int main(int argc, char **argv)
     if(argc > 1) SENTINEL_CONF->CONFIGURATION_FILE=argv[1];
     sentinel::worker_manager::Client client;
     for(int i = 0; i < 100; ++i) {
-        client.AssignTask(0, i, i);
+        Event e;
+        client.AssignTask(0, i, i,e);
     }
     sleep(1);
     client.FinalizeWorkerManager(0);

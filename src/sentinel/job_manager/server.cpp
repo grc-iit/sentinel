@@ -13,9 +13,9 @@ void sentinel::job_manager::Server::RunInternal(std::future<void> futureObj) {
     }
 }
 
-bool sentinel::job_manager::Server::SubmitJob(uint32_t jobId){
+bool sentinel::job_manager::Server::SubmitJob(uint32_t jobId, uint32_t num_sources){
     auto classLoader = ClassLoader();
-    std::shared_ptr<Job> job = classLoader.LoadClass<Job>(jobId);
+    std::shared_ptr<Job<Event>> job = classLoader.LoadClass<Job<Event>>(jobId);
     jobs.insert(std::make_pair(jobId, job));
 
     ResourceAllocation defaultResourceAllocation = SENTINEL_CONF->DEFAULT_RESOURCE_ALLOCATION;
@@ -25,13 +25,21 @@ bool sentinel::job_manager::Server::SubmitJob(uint32_t jobId){
     SpawnWorkerManagers(defaultResourceAllocation);
 
     auto workermanager_client = basket::Singleton<sentinel::worker_manager::Client>::GetInstance();
-    workmanager_id workermanager = used_resources.at(jobId).at(0);
 
-    uint32_t collector_id = job->GetCollectorId();
-    workermanager_client->AssignTask(workermanager, jobId, collector_id);
-    //Lets ensure that load map is not empty
-    WorkerManagerStats wms = WorkerManagerStats();
-    UpdateWorkerManagerStats(workermanager, wms);
+    auto collector = job->GetTask();
+
+    for(int i=0;i<num_sources;i++){
+        workmanager_id workermanager;
+        if(i==0) workermanager = used_resources.at(jobId).at(0);
+        else workermanager = reversed_loadMap.begin()->second;
+        Event event;
+        event.id_ = std::to_string(i);
+        workermanager_client->AssignTask(workermanager, jobId, collector->id_,event);
+        //Lets ensure that load map is not empty
+        WorkerManagerStats wms = WorkerManagerStats();
+        UpdateWorkerManagerStats(workermanager, wms);
+    }
+
 }
 
 bool sentinel::job_manager::Server::TerminateJob(uint32_t jobId){
@@ -78,28 +86,42 @@ std::pair<bool, WorkerManagerStats> sentinel::job_manager::Server::GetWorkerMana
     return std::pair<bool, WorkerManagerStats>(true, possible_load->second);
 }
 
-std::pair<workmanager_id, task_id> sentinel::job_manager::Server::GetNextNode(uint32_t workermanagerId, uint32_t currentTaskId){
-    auto possible_destination = destinationMap.find(currentTaskId);
-    workmanager_id currentWorkermanagerId = possible_destination->second.first;
-    //If we dont have a current destination, or the destination is over a certain fullness
-    if (possible_destination == destinationMap.end() ||
-        loadMap.at(currentWorkermanagerId).num_tasks_queued_ > SENTINEL_CONF->MAX_LOAD) {
-        //find a new destination
-        workmanager_id newWorkermanager = reversed_loadMap.begin()->second;
-        task_id newTask;
-        if(possible_destination == destinationMap.end()){
-            //What is the id of the next task
-            job_id current_job = reversed_used_resources.at(workermanagerId);
-            newTask = jobs.at(current_job)->GetNextTaskId(currentTaskId);
-            destinationMap.insert(std::pair<task_id, std::pair<workmanager_id, task_id>>(currentTaskId,
-                    std::pair<workmanager_id, task_id>(newWorkermanager, newTask)));
-        }
-        else {
-            newTask = possible_destination->second.second;
-            possible_destination->second = std::pair<workmanager_id, task_id>(newWorkermanager, newTask);
+std::vector<std::tuple<uint32_t, uint16_t, task_id>> sentinel::job_manager::Server::GetNextNode(uint32_t job_id, uint32_t currentTaskId, Event event){
+
+    auto newTasks = jobs.at(currentTaskId)->GetTask(currentTaskId)->links;
+    auto next_tasks = std::vector<std::tuple<uint32_t, uint16_t, task_id>>();
+    for(auto task:newTasks){
+
+        switch(task->type_){
+            case TaskType::SOURCE:{
+                workmanager_id newWorkermanager = reversed_loadMap.begin()->second;
+                next_tasks.push_back(std::tuple<uint32_t,uint16_t, task_id>(newWorkermanager, 0, task->id_));
+            }
+            case TaskType::KEYBY:{
+                KeyByTask<Event>* task_= (KeyByTask<Event>*)((void*)&task);
+                auto iter = used_resources.find(job_id);
+                if(iter != used_resources.end()){
+                    size_t total_workers = iter->second.size();
+                    std::hash<size_t> worker_thread_hash;
+                    for(auto task:task_->links){
+                        auto child_event=event;
+                        child_event.id_ += std::to_string(task->id_)+std::to_string(task->job_id_);
+                        auto hash = task_->Execute(event);
+                        auto worker_index = hash % total_workers;
+                        uint16_t worker_thread_id = worker_thread_hash(hash) % SENTINEL_CONF->WORKERTHREAD_COUNT;
+                        next_tasks.push_back( std::tuple<uint32_t,uint16_t, task_id>(worker_index,worker_thread_id , task->id_));
+                    }
+                }else{
+                    workmanager_id newWorkermanager = reversed_loadMap.begin()->second;
+                    next_tasks.push_back( std::tuple<uint32_t,uint16_t, task_id>(newWorkermanager, 0, task->id_));
+                }
+            }
+            case TaskType::SINK:{
+                workmanager_id newWorkermanager = reversed_loadMap.begin()->second;
+                next_tasks.push_back( std::tuple<uint32_t,uint16_t, task_id>(newWorkermanager, 0, task->id_));
+            }
         }
     }
-    return possible_destination->second;
 }
 
 bool sentinel::job_manager::Server::ChangeResourceAllocation(ResourceAllocation &resourceAllocation){
