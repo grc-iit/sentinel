@@ -66,25 +66,26 @@ namespace sentinel {
         std::vector<CharStruct> WORKERMANAGER_LISTS;
 
 
-        ConfigurationManager() : JOBMANAGER_HOST_FILE("${HOME}/server_lists"),
-                                 WORKERMANAGER_HOST_FILE("${HOME}/server_lists"),
+        ConfigurationManager() : JOBMANAGER_HOST_FILE("${HOME}/projects/rhea/sentinel/conf/hostfile"),
+                                 WORKERMANAGER_HOST_FILE("${HOME}/projects/rhea/sentinel/conf/hostfile"),
                                  JOBMANAGER_PORT(9000),
                                  WORKERMANAGER_PORT(10000),
                                  JOBMANAGER_RPC_THREADS(4),
                                  WORKERMANAGER_RPC_THREADS(4),
-                                 DEFAULT_RESOURCE_ALLOCATION(0, 1,1,1),
+                                 DEFAULT_RESOURCE_ALLOCATION(0, 1,1,4),
                                  JOBMANAGER_DIR("/dev/shm/hari/single_node_jobmanager_server"), //TODO: CHECK if they have to be different
                                  WORKERMANAGER_DIR("/dev/shm/hari/single_node_workermanager_server"),
                                  CONFIGURATION_FILE("/home/user/sentinel/conf/base_rhea.conf"),
-                                 WORKERMANAGER_DINAMIC_HOSTFILE("${HOME}/server_lists"),
-                                 WORKERMANAGER_EXECUTABLE("/home/hdevarajan/projects/rhea/build/sentinel/sentinel_worker_manager"),
+                                 WORKERMANAGER_DINAMIC_HOSTFILE("${HOME}/projects/rhea/sentinel/conf/hostfile"),
+                                 WORKERMANAGER_EXECUTABLE("${HOME}/projects/rhea/build/sentinel/sentinel_worker_manager"),
                                  JOBMANAGER_COUNT(1),
                                  WORKERMANAGER_COUNT(1),
-                                 WORKERTHREAD_COUNT(4),
+                                 WORKERTHREAD_COUNT(8),
                                  WORKERMANAGER_EPOCH_MS(50),
                                  WORKERMANAGER_UPDATE_MIN_TASKS(256),
                                  WORKERTHREAD_TIMOUT_MS(100),
                                  MAX_LOAD(0.8),
+                                 WORKERMANAGER_LISTS({"localhost"}),
                                  RANDOM_SEED(100){}
 
 
@@ -93,6 +94,7 @@ namespace sentinel {
             LoadConfiguration();
             BASKET_CONF->ConfigureDefaultClient(JOBMANAGER_HOST_FILE.c_str());
             BASKET_CONF->RPC_PORT = JOBMANAGER_PORT;
+            JOBMANAGER_COUNT = BASKET_CONF->NUM_SERVERS;
         }
 
         void ConfigureJobManagerServer() {
@@ -109,6 +111,7 @@ namespace sentinel {
             LoadConfiguration();
             BASKET_CONF->ConfigureDefaultClient(WORKERMANAGER_HOST_FILE.c_str());
             BASKET_CONF->RPC_PORT = WORKERMANAGER_PORT;
+            WORKERMANAGER_COUNT = BASKET_CONF->NUM_SERVERS;
         }
 
         void ConfigureWorkermanagerServer() {

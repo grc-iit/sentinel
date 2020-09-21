@@ -31,16 +31,17 @@ namespace sentinel::job_manager{
         std::map<WorkerManagerStats, workmanager_id> reversed_loadMap;
         std::mutex mtx_loadmap;
 
+        std::shared_ptr<sentinel::worker_manager::Client> workermanager_client;
+
         std::unordered_map<workmanager_id, std::vector<task_id>> taskMap;
         std::unordered_map<task_id, std::pair<workmanager_id, task_id>> destinationMap;
 
         std::mutex mtx_allocate;
-        std::unordered_map<workmanager_id, CharStruct> available_workermanagers;
-        std::unordered_map<job_id, std::vector<workmanager_id>> used_resources;
-        std::unordered_map<workmanager_id, job_id> reversed_used_resources;
+        std::unordered_map<workmanager_id, std::pair<CharStruct,uint32_t>> available_workermanagers;
+        std::unordered_map<job_id, std::vector<std::tuple<workmanager_id,uint32_t,uint32_t>>> used_resources;
 
         std::unordered_map<job_id, std::shared_ptr<Job<Event>>> jobs;
-        bool SpawnWorkerManagers(ResourceAllocation &resourceAllocation);
+        bool SpawnWorkerManagers(uint32_t required_threads, job_id job_id_);
         bool TerminateWorkerManagers(ResourceAllocation &resourceAllocation);
 
         void RunInternal(std::future<void> futureObj);
@@ -51,6 +52,7 @@ namespace sentinel::job_manager{
             SENTINEL_CONF->ConfigureJobManagerServer();
             auto basket=BASKET_CONF;
             rpc=basket::Singleton<RPCFactory>::GetInstance()->GetRPC(BASKET_CONF->RPC_PORT);
+
             std::function<bool(uint32_t,uint32_t)> functionSubmitJob(std::bind(&sentinel::job_manager::Server::SubmitJob, this, std::placeholders::_1, std::placeholders::_2));
             std::function<bool(uint32_t)> functionTerminateJob(std::bind(&sentinel::job_manager::Server::TerminateJob, this, std::placeholders::_1));
             std::function<bool(uint32_t,WorkerManagerStats&)> functionUpdateWorkerManagerStats(std::bind(&sentinel::job_manager::Server::UpdateWorkerManagerStats, this, std::placeholders::_1, std::placeholders::_2));
@@ -64,9 +66,11 @@ namespace sentinel::job_manager{
             rpc->bind("GetNextNode", functionGetNextNode);
             rpc->bind("ChangeResourceAllocation", functionChangeResourceAllocation);
 
+            workermanager_client = basket::Singleton<sentinel::worker_manager::Client>::GetInstance();
+
             int i = 0;
             for(auto&& node: SENTINEL_CONF->WORKERMANAGER_LISTS){
-                available_workermanagers.insert(std::make_pair(i, node));
+                available_workermanagers.insert({i, {node,SENTINEL_CONF->WORKERTHREAD_COUNT}});
                 i++;
             }
         }

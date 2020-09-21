@@ -11,7 +11,7 @@ int main(int argc, char **argv)
     sentinel::worker_manager::Client client;
     for(int i = 0; i < 100; ++i) {
         Event e;
-        client.AssignTask(0, i, i,e);
+        client.AssignTask(0,0, i, i,e);
     }
     sleep(1);
     client.FinalizeWorkerManager(0);
