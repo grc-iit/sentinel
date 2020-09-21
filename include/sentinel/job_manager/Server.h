@@ -37,12 +37,11 @@ namespace sentinel::job_manager{
         std::unordered_map<task_id, std::pair<workmanager_id, task_id>> destinationMap;
 
         std::mutex mtx_allocate;
-        std::unordered_map<workmanager_id, CharStruct> available_workermanagers;
-        std::unordered_map<job_id, std::vector<workmanager_id>> used_resources;
-        std::unordered_map<workmanager_id, job_id> reversed_used_resources;
+        std::unordered_map<workmanager_id, std::pair<CharStruct,uint32_t>> available_workermanagers;
+        std::unordered_map<job_id, std::vector<std::tuple<workmanager_id,uint32_t,uint32_t>>> used_resources;
 
         std::unordered_map<job_id, std::shared_ptr<Job<Event>>> jobs;
-        bool SpawnWorkerManagers(ResourceAllocation &resourceAllocation);
+        bool SpawnWorkerManagers(uint32_t required_threads, job_id job_id_);
         bool TerminateWorkerManagers(ResourceAllocation &resourceAllocation);
 
         void RunInternal(std::future<void> futureObj);
@@ -71,7 +70,7 @@ namespace sentinel::job_manager{
 
             int i = 0;
             for(auto&& node: SENTINEL_CONF->WORKERMANAGER_LISTS){
-                available_workermanagers.insert({i, node});
+                available_workermanagers.insert({i, {node,SENTINEL_CONF->WORKERTHREAD_COUNT}});
                 i++;
             }
         }
