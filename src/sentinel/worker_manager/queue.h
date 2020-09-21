@@ -27,6 +27,15 @@ public:
         ++size_;
         lock_.unlock();
     }
+    bool Front(T &obj) {
+        if(size_ == 0) {
+            return false;
+        }
+        lock_.lock();
+        obj = list_.front();
+        lock_.unlock();
+        return true;
+    }
     bool Pop(T &obj) {
         if(size_ == 0) {
             return false;

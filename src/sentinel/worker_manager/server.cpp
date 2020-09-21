@@ -154,7 +154,7 @@ sentinel::worker_manager::Worker::Worker():server_() {
 std::tuple<uint32_t,uint32_t,Event> sentinel::worker_manager::Worker::GetTask() {
     AUTO_TRACER("sentinel::worker_manager::Worker::GetTask");
     std::tuple<uint32_t,uint32_t,Event> id;
-    queue_.Pop(id);
+    queue_.Front(id);
     return std::move(id);
 }
 
@@ -183,6 +183,8 @@ void sentinel::worker_manager::Worker::ExecuteTask(std::tuple<uint32_t,uint32_t,
 
 void sentinel::worker_manager::Worker::GetAndExecuteTask() {
     ExecuteTask(GetTask());
+    std::tuple<uint32_t,uint32_t,Event> id;
+    queue_.Pop(id);
 }
 
 void sentinel::worker_manager::Worker::Run(std::future<void> loop_cond,Server* server) {

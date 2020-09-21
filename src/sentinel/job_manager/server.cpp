@@ -22,7 +22,7 @@ bool sentinel::job_manager::Server::SubmitJob(uint32_t jobId, uint32_t num_sourc
     defaultResourceAllocation.job_id_ = jobId;
 
     used_resources.insert(std::make_pair(jobId, std::vector<std::tuple<workmanager_id,uint32_t,uint32_t>>()));
-    auto threads = defaultResourceAllocation.num_nodes_ * defaultResourceAllocation.num_threads_per_proc * defaultResourceAllocation.num_threads_per_proc;
+    auto threads = defaultResourceAllocation.num_nodes_ * defaultResourceAllocation.num_procs_per_node * defaultResourceAllocation.num_threads_per_proc;
     SpawnWorkerManagers(threads, jobId);
     sleep(1);
     auto collector = job->GetTask();
@@ -101,7 +101,7 @@ std::pair<bool, WorkerManagerStats> sentinel::job_manager::Server::GetWorkerMana
 
 std::vector<std::tuple<uint32_t, uint16_t, task_id>> sentinel::job_manager::Server::GetNextNode(uint32_t job_id, uint32_t currentTaskId, Event event){
 
-    auto newTasks = jobs.at(currentTaskId)->GetTask(currentTaskId)->links;
+    auto newTasks = jobs.at(job_id)->GetTask(currentTaskId)->links;
     auto next_tasks = std::vector<std::tuple<uint32_t, uint16_t, task_id>>();
     for(auto task:newTasks){
 
@@ -137,7 +137,7 @@ std::vector<std::tuple<uint32_t, uint16_t, task_id>> sentinel::job_manager::Serv
 }
 
 bool sentinel::job_manager::Server::ChangeResourceAllocation(ResourceAllocation &resourceAllocation){
-    auto threads = resourceAllocation.num_nodes_ * resourceAllocation.num_threads_per_proc * resourceAllocation.num_threads_per_proc;
+    auto threads = resourceAllocation.num_nodes_ * resourceAllocation.num_procs_per_node * resourceAllocation.num_threads_per_proc;
     if( resourceAllocation.num_nodes_ > 0) return SpawnWorkerManagers(threads,resourceAllocation.job_id_);
     else if( resourceAllocation.num_nodes_ < 0) return TerminateWorkerManagers(resourceAllocation);
     return true;
@@ -155,6 +155,7 @@ bool sentinel::job_manager::Server::SpawnWorkerManagers(uint32_t required_thread
     std::string hosts = "localhost";
     auto left_threads = required_threads;
     auto available_worker_iter = available_workermanagers.begin();
+    //TODO: throw error if no available workers.
     auto new_worker_spawn = std::vector<uint32_t>();
     while(left_threads > 0){
         auto worker_index = available_worker_iter->first;
