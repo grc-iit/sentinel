@@ -23,7 +23,7 @@
 
 sentinel::worker_manager::Server::Server() {
     AUTO_TRACER("sentinel::worker_manager::Server::Server");
-    SENTINEL_CONF->ConfigureWorkermanagerServer();
+    job_manager = basket::Singleton<sentinel::job_manager::client>::GetInstance();
     pool_.Init(SENTINEL_CONF->WORKERTHREAD_COUNT);
     epoch_msec_ = SENTINEL_CONF->WORKERMANAGER_EPOCH_MS;
     min_tasks_assigned_update_ = SENTINEL_CONF->WORKERMANAGER_UPDATE_MIN_TASKS;
@@ -37,6 +37,7 @@ sentinel::worker_manager::Server::Server() {
 
 void sentinel::worker_manager::Server::Init() {
     AUTO_TRACER("sentinel::worker_manager::Server::Init");
+    SENTINEL_CONF->ConfigureWorkermanagerServer();
     client_rpc_ = basket::Singleton<RPCFactory>::GetInstance()->GetRPC(BASKET_CONF->RPC_PORT);
 
     std::function<bool(uint32_t,uint32_t, uint32_t,Event &)> functionAssignTask(std::bind(
@@ -113,8 +114,7 @@ bool sentinel::worker_manager::Server::UpdateJobManager() {
     double time_ms = epoch_timer_.endTime();
     int num_tasks_queued = GetNumTasksQueued();
     WorkerManagerStats wms(time_ms, num_tasks_assigned_, num_tasks_queued);
-    auto jm = basket::Singleton<sentinel::job_manager::client>::GetInstance();
-    bool check = jm->UpdateWorkerManagerStats(rank_, wms);
+    auto check = job_manager->UpdateWorkerManagerStats(rank_, wms);
     epoch_timer_.startTime();
     return check;
 }
@@ -128,9 +128,9 @@ bool sentinel::worker_manager::Server::AssignTask(uint32_t worker_thread_id, uin
     ++num_tasks_assigned_;
 
     //Update Job Manager
-//    if(ReadyToUpdateJobManager()) {
-//        UpdateJobManager();
-//    }
+    if(ReadyToUpdateJobManager()) {
+        UpdateJobManager();
+    }
     return true;
 }
 

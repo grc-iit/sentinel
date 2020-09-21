@@ -1,7 +1,5 @@
 #include <sentinel/job_manager/Server.h>
-#ifdef DISABLE_DYNAMIC_LOAD
-#include <rhea_job/common/rhea_job.h>
-#endif
+
 
 void sentinel::job_manager::Server::Run(std::future<void> futureObj,common::Daemon<Server> * obj) {
     daemon = obj;

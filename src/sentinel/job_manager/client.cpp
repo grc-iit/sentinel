@@ -22,12 +22,12 @@ bool sentinel::job_manager::client::TerminateJob(uint32_t jobId) {
 
 bool sentinel::job_manager::client::UpdateWorkerManagerStats(uint32_t workerManagerId, WorkerManagerStats &stats) {
     int server = 0;
-    auto ret = rpc->call<RPCLIB_MSGPACK::object_handle>(server, "GetWorkerManagerStats", workerManagerId,stats).as<bool>();
+    return rpc->call<RPCLIB_MSGPACK::object_handle>(server, "UpdateWorkerManagerStats", workerManagerId, stats).as<bool>();
 }
 
 std::pair<bool, WorkerManagerStats> sentinel::job_manager::client::GetWorkerManagerStats(uint32_t workerManagerId) {
     int server = 0;
-    auto ret = rpc->call<RPCLIB_MSGPACK::object_handle>(server, "GetWorkerManagerStats", workerManagerId).as<std::pair<bool, WorkerManagerStats>>();
+    return rpc->call<RPCLIB_MSGPACK::object_handle>(server, "GetWorkerManagerStats", workerManagerId).as<std::pair<bool, WorkerManagerStats>>();
 }
 
 std::vector<std::tuple<uint32_t, uint16_t, uint32_t>> sentinel::job_manager::client::GetNextNode(uint32_t job_id, uint32_t currentTaskId, Event event) {
