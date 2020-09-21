@@ -128,9 +128,9 @@ bool sentinel::worker_manager::Server::AssignTask(uint32_t worker_thread_id, uin
     ++num_tasks_assigned_;
 
     //Update Job Manager
-    if(ReadyToUpdateJobManager()) {
-        UpdateJobManager();
-    }
+//    if(ReadyToUpdateJobManager()) {
+//        UpdateJobManager();
+//    }
     return true;
 }
 
@@ -162,23 +162,18 @@ void sentinel::worker_manager::Worker::ExecuteTask(std::tuple<uint32_t,uint32_t,
     AUTO_TRACER("sentinel::worker_manager::Worker::ExecuteTask", task_id);
     std::shared_ptr<Job<Event>> job = ClassLoader().LoadClass<Job<Event>>(std::get<0>(id));
     std::shared_ptr<Task<Event>> task = job->GetTask(std::get<1>(id));
-    std::function<bool(uint32_t job_id, uint32_t current_task_id, Event &output_event)> emit_function(std::bind(&sentinel::worker_manager::Worker::EmitCallback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+    std::function<bool(uint32_t, uint32_t, Event &)> emit_function(std::bind(&sentinel::worker_manager::Worker::EmitCallback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
     task->EmitCallback(emit_function);
     switch(task->type_){
         case TaskType::SOURCE:{
-            SourceTask<Event>* task_= (SourceTask<Event>*)((void*)&task);
-            task_->Execute(std::get<2>(id));
+            task->Execute(std::get<2>(id));
         }
         case TaskType::KEYBY:{
-            KeyByTask<Event>* task_= (KeyByTask<Event>*)((void*)&task);
-            auto hash = task_->Execute(std::get<2>(id));
-            Event hash_event;
-            hash_event.id_=std::to_string(hash);
-            emit_function(task_->job_id_,task_->id_,hash_event);
+            Event hash_event = task->Execute(std::get<2>(id));
+            emit_function(task->job_id_,task->id_,hash_event);
         }
         case TaskType::SINK:{
-            SinkTask<Event>* task_= (SinkTask<Event>*)((void*)&task);
-            task_->Execute(std::get<2>(id));
+            task->Execute(std::get<2>(id));
         }
     }
 }
