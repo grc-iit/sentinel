@@ -18,14 +18,23 @@ class Queue {
 private:
     std::mutex lock_;
     std::list<T> list_;
-    uint32_t size_ = 0;
+    uint32_t size_;
 public:
-    Queue() {}
+    Queue():lock_(),list_(),size_(0){}
     void Push(const T &obj) {
         lock_.lock();
         list_.push_back(obj);
         ++size_;
         lock_.unlock();
+    }
+    bool Front(T &obj) {
+        if(size_ == 0) {
+            return false;
+        }
+        lock_.lock();
+        obj = list_.front();
+        lock_.unlock();
+        return true;
     }
     bool Pop(T &obj) {
         if(size_ == 0) {
