@@ -53,7 +53,7 @@ namespace sentinel::worker_manager {
 
         bool UpdateJobManager();
 
-        std::shared_ptr<sentinel::worker_manager::Worker> FindMinimumQueue();
+        std::shared_ptr<sentinel::worker_manager::Worker> FindMinimumQueue(uint32_t worker_thread_id);
 
         int GetNumTasksQueued(void);
 
@@ -65,7 +65,7 @@ namespace sentinel::worker_manager {
 
         void Run(std::future<void> loop_cond, common::Daemon<Server> *obj);
 
-        bool AssignTask(uint32_t job_id, uint32_t task_id, Event &event);
+        bool AssignTask(uint32_t worker_thread_id, uint32_t job_id, uint32_t task_id, Event &event);
 
         bool FinalizeWorkerManager();
     };

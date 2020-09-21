@@ -66,7 +66,7 @@ namespace sentinel::job_manager{
 
             int i = 0;
             for(auto&& node: SENTINEL_CONF->WORKERMANAGER_LISTS){
-                available_workermanagers.insert(std::make_pair(i, node));
+                available_workermanagers.insert({i, node});
                 i++;
             }
         }

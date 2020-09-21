@@ -72,7 +72,7 @@ namespace sentinel {
                                  WORKERMANAGER_PORT(10000),
                                  JOBMANAGER_RPC_THREADS(4),
                                  WORKERMANAGER_RPC_THREADS(4),
-                                 DEFAULT_RESOURCE_ALLOCATION(0, 1,1,1),
+                                 DEFAULT_RESOURCE_ALLOCATION(0, 1,1,4),
                                  JOBMANAGER_DIR("/dev/shm/hari/single_node_jobmanager_server"), //TODO: CHECK if they have to be different
                                  WORKERMANAGER_DIR("/dev/shm/hari/single_node_workermanager_server"),
                                  CONFIGURATION_FILE("/home/user/sentinel/conf/base_rhea.conf"),
@@ -85,6 +85,7 @@ namespace sentinel {
                                  WORKERMANAGER_UPDATE_MIN_TASKS(256),
                                  WORKERTHREAD_TIMOUT_MS(100),
                                  MAX_LOAD(0.8),
+                                 WORKERMANAGER_LISTS({"localhost"}),
                                  RANDOM_SEED(100){}
 
 

@@ -9,7 +9,7 @@ void sentinel::job_manager::Server::Run(std::future<void> futureObj,common::Daem
 }
 
 void sentinel::job_manager::Server::RunInternal(std::future<void> futureObj) {
-
+    this->SubmitJob(0,1);
     while(futureObj.wait_for(std::chrono::milliseconds(1)) == std::future_status::timeout){
         usleep(10000);
     }
@@ -27,7 +27,7 @@ bool sentinel::job_manager::Server::SubmitJob(uint32_t jobId, uint32_t num_sourc
     SpawnWorkerManagers(defaultResourceAllocation);
 
     auto workermanager_client = basket::Singleton<sentinel::worker_manager::Client>::GetInstance();
-
+    job->CreateDAG();
     auto collector = job->GetTask();
 
     for(int i=0;i<num_sources;i++){
@@ -36,7 +36,7 @@ bool sentinel::job_manager::Server::SubmitJob(uint32_t jobId, uint32_t num_sourc
         else workermanager = reversed_loadMap.begin()->second;
         Event event;
         event.id_ = std::to_string(i);
-        workermanager_client->AssignTask(workermanager, jobId, collector->id_,event);
+        workermanager_client->AssignTask(workermanager,0, jobId, collector->id_,event);
         //Lets ensure that load map is not empty
         WorkerManagerStats wms = WorkerManagerStats();
         UpdateWorkerManagerStats(workermanager, wms);
@@ -144,15 +144,16 @@ bool sentinel::job_manager::Server::SpawnWorkerManagers(ResourceAllocation &reso
     std::string hosts = "localhost";
     for(int i=0; i < resourceAllocation.num_nodes_; i++){
         mtx_allocate.lock();
-        auto allocated_workermanager = available_workermanagers.begin();
+        auto allocated_workermanager_id = available_workermanagers.begin()->first;
+        auto allocated_workermanager_host = available_workermanagers.begin()->second;
         available_workermanagers.erase(available_workermanagers.begin());
         mtx_allocate.unlock();
 
-        used_resources.at(resourceAllocation.job_id_).emplace_back(allocated_workermanager->first);
-        reversed_used_resources.insert(std::make_pair(allocated_workermanager->first, resourceAllocation.job_id_));
-        hosts += "," + allocated_workermanager->second.string();
+        used_resources.at(resourceAllocation.job_id_).emplace_back(allocated_workermanager_id);
+        reversed_used_resources.insert(std::make_pair(allocated_workermanager_id, resourceAllocation.job_id_));
+        hosts += "," + allocated_workermanager_host.string();
     }
-    MPI_Info_set(info,"host",hosts.data());
+    MPI_Info_set(info,"host", hosts.data());
 
     MPI_Comm workerManagerComm;
 

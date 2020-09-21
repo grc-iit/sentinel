@@ -18,9 +18,9 @@ class Queue {
 private:
     std::mutex lock_;
     std::list<T> list_;
-    uint32_t size_ = 0;
+    uint32_t size_;
 public:
-    Queue() {}
+    Queue():lock_(),list_(),size_(0){}
     void Push(const T &obj) {
         lock_.lock();
         list_.push_back(obj);
