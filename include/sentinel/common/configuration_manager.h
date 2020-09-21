@@ -66,8 +66,8 @@ namespace sentinel {
         std::vector<CharStruct> WORKERMANAGER_LISTS;
 
 
-        ConfigurationManager() : JOBMANAGER_HOST_FILE("${HOME}/server_lists"),
-                                 WORKERMANAGER_HOST_FILE("${HOME}/server_lists"),
+        ConfigurationManager() : JOBMANAGER_HOST_FILE("${HOME}/projects/rhea/sentinel/conf/hostfile"),
+                                 WORKERMANAGER_HOST_FILE("${HOME}/projects/rhea/sentinel/conf/hostfile"),
                                  JOBMANAGER_PORT(9000),
                                  WORKERMANAGER_PORT(10000),
                                  JOBMANAGER_RPC_THREADS(4),
@@ -76,8 +76,8 @@ namespace sentinel {
                                  JOBMANAGER_DIR("/dev/shm/hari/single_node_jobmanager_server"), //TODO: CHECK if they have to be different
                                  WORKERMANAGER_DIR("/dev/shm/hari/single_node_workermanager_server"),
                                  CONFIGURATION_FILE("/home/user/sentinel/conf/base_rhea.conf"),
-                                 WORKERMANAGER_DINAMIC_HOSTFILE("${HOME}/server_lists"),
-                                 WORKERMANAGER_EXECUTABLE("/home/hdevarajan/projects/rhea/build/sentinel/sentinel_worker_manager"),
+                                 WORKERMANAGER_DINAMIC_HOSTFILE("${HOME}/projects/rhea/sentinel/conf/hostfile"),
+                                 WORKERMANAGER_EXECUTABLE("${HOME}/projects/rhea/build/sentinel/sentinel_worker_manager"),
                                  JOBMANAGER_COUNT(1),
                                  WORKERMANAGER_COUNT(1),
                                  WORKERTHREAD_COUNT(4),
