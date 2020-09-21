@@ -167,13 +167,16 @@ void sentinel::worker_manager::Worker::ExecuteTask(std::tuple<uint32_t,uint32_t,
     switch(task->type_){
         case TaskType::SOURCE:{
             task->Execute(std::get<2>(id));
+            break;
         }
         case TaskType::KEYBY:{
             Event hash_event = task->Execute(std::get<2>(id));
             emit_function(task->job_id_,task->id_,hash_event);
+            break;
         }
         case TaskType::SINK:{
             task->Execute(std::get<2>(id));
+            break;
         }
     }
 }

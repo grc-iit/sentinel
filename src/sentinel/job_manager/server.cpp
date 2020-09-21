@@ -9,7 +9,7 @@ void sentinel::job_manager::Server::Run(std::future<void> futureObj,common::Daem
 }
 
 void sentinel::job_manager::Server::RunInternal(std::future<void> futureObj) {
-    this->SubmitJob(0,1);
+//    this->SubmitJob(0,1);
     while(futureObj.wait_for(std::chrono::milliseconds(1)) == std::future_status::timeout){
         usleep(10000);
     }
@@ -25,8 +25,7 @@ bool sentinel::job_manager::Server::SubmitJob(uint32_t jobId, uint32_t num_sourc
 
     used_resources.insert(std::make_pair(jobId, std::vector<workmanager_id>()));
     SpawnWorkerManagers(defaultResourceAllocation);
-
-    auto workermanager_client = basket::Singleton<sentinel::worker_manager::Client>::GetInstance();
+    sleep(1);
     auto collector = job->GetTask();
 
     for(int i=0;i<num_sources;i++){
@@ -95,34 +94,31 @@ std::vector<std::tuple<uint32_t, uint16_t, task_id>> sentinel::job_manager::Serv
 
         switch(task->type_){
             case TaskType::SOURCE:{
-                workmanager_id newWorkermanager = reversed_loadMap.begin()->second;
-                next_tasks.push_back(std::tuple<uint32_t,uint16_t, task_id>(newWorkermanager, 0, task->id_));
+//                workmanager_id newWorkermanager = reversed_loadMap.begin()->second;
+//                next_tasks.push_back(std::tuple<uint32_t,uint16_t, task_id>(newWorkermanager, 0, task->id_));
+                break;
             }
             case TaskType::KEYBY:{
                 auto iter = used_resources.find(job_id);
-                if(iter != used_resources.end()){
-                    size_t total_workers = iter->second.size();
-                    std::hash<size_t> worker_thread_hash;
-                    for(auto childtask:task->links){
-                        auto child_event=event;
-                        child_event.id_ += std::to_string(childtask->id_)+std::to_string(childtask->job_id_);
-                        auto hash_event = task->Execute(event);
-                        auto hash = atoi(hash_event.id_.c_str());
-                        auto worker_index = hash % total_workers;
-                        uint16_t worker_thread_id = worker_thread_hash(hash) % SENTINEL_CONF->WORKERTHREAD_COUNT;
-                        next_tasks.push_back( std::tuple<uint32_t,uint16_t, task_id>(worker_index,worker_thread_id , childtask->id_));
-                    }
-                }else{
-                    workmanager_id newWorkermanager = reversed_loadMap.begin()->second;
-                    next_tasks.push_back( std::tuple<uint32_t,uint16_t, task_id>(newWorkermanager, 0, task->id_));
+                size_t total_workers = iter->second.size();
+                std::hash<size_t> worker_thread_hash;
+                for(auto childtask:task->links){
+                    auto child_event=event;
+                    child_event.id_ += std::to_string(childtask->id_)+std::to_string(childtask->job_id_);
+                    auto hash_event = task->Execute(event);
+                    auto hash = atoi(hash_event.id_.c_str());
+                    auto worker_index = hash % total_workers;
+                    uint16_t worker_thread_id = worker_thread_hash(hash) % SENTINEL_CONF->WORKERTHREAD_COUNT;
+                    next_tasks.push_back( std::tuple<uint32_t,uint16_t, task_id>(worker_index,worker_thread_id , childtask->id_));
                 }
+                break;
             }
             case TaskType::SINK:{
-                workmanager_id newWorkermanager = reversed_loadMap.begin()->second;
-                next_tasks.push_back( std::tuple<uint32_t,uint16_t, task_id>(newWorkermanager, 0, task->id_));
+                break;
             }
         }
     }
+    return next_tasks;
 }
 
 bool sentinel::job_manager::Server::ChangeResourceAllocation(ResourceAllocation &resourceAllocation){

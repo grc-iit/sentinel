@@ -94,6 +94,7 @@ namespace sentinel {
             LoadConfiguration();
             BASKET_CONF->ConfigureDefaultClient(JOBMANAGER_HOST_FILE.c_str());
             BASKET_CONF->RPC_PORT = JOBMANAGER_PORT;
+            JOBMANAGER_COUNT = BASKET_CONF->NUM_SERVERS;
         }
 
         void ConfigureJobManagerServer() {
@@ -110,6 +111,7 @@ namespace sentinel {
             LoadConfiguration();
             BASKET_CONF->ConfigureDefaultClient(WORKERMANAGER_HOST_FILE.c_str());
             BASKET_CONF->RPC_PORT = WORKERMANAGER_PORT;
+            WORKERMANAGER_COUNT = BASKET_CONF->NUM_SERVERS;
         }
 
         void ConfigureWorkermanagerServer() {

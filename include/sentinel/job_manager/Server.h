@@ -31,6 +31,8 @@ namespace sentinel::job_manager{
         std::map<WorkerManagerStats, workmanager_id> reversed_loadMap;
         std::mutex mtx_loadmap;
 
+        std::shared_ptr<sentinel::worker_manager::Client> workermanager_client;
+
         std::unordered_map<workmanager_id, std::vector<task_id>> taskMap;
         std::unordered_map<task_id, std::pair<workmanager_id, task_id>> destinationMap;
 
@@ -51,6 +53,7 @@ namespace sentinel::job_manager{
             SENTINEL_CONF->ConfigureJobManagerServer();
             auto basket=BASKET_CONF;
             rpc=basket::Singleton<RPCFactory>::GetInstance()->GetRPC(BASKET_CONF->RPC_PORT);
+
             std::function<bool(uint32_t,uint32_t)> functionSubmitJob(std::bind(&sentinel::job_manager::Server::SubmitJob, this, std::placeholders::_1, std::placeholders::_2));
             std::function<bool(uint32_t)> functionTerminateJob(std::bind(&sentinel::job_manager::Server::TerminateJob, this, std::placeholders::_1));
             std::function<bool(uint32_t,WorkerManagerStats&)> functionUpdateWorkerManagerStats(std::bind(&sentinel::job_manager::Server::UpdateWorkerManagerStats, this, std::placeholders::_1, std::placeholders::_2));
@@ -63,6 +66,8 @@ namespace sentinel::job_manager{
             rpc->bind("GetWorkerManagerStats", functionGetWorkerManagerStats);
             rpc->bind("GetNextNode", functionGetNextNode);
             rpc->bind("ChangeResourceAllocation", functionChangeResourceAllocation);
+
+            workermanager_client = basket::Singleton<sentinel::worker_manager::Client>::GetInstance();
 
             int i = 0;
             for(auto&& node: SENTINEL_CONF->WORKERMANAGER_LISTS){
