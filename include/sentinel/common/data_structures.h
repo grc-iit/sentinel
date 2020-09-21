@@ -50,12 +50,18 @@ public:
         return *this;
     }
 
+    E Execute(E &event){
+        return ExecuteInternal(event);
+    }
+
     bool EmitCallback(std::function<bool(uint32_t, uint32_t, Event &)> &func){
-        emit=func;
+        emit=std::move(func);
         return true;
     }
 protected:
-
+    virtual E ExecuteInternal(E &event){
+        return event;
+    }
     std::function<bool(uint32_t, uint32_t, Event &)> emit;
 
 };
@@ -63,7 +69,8 @@ template<typename E, typename std::enable_if<std::is_base_of<Event, E>::value>::
 struct SourceTask: public Task<E>{
     SourceTask():Task<E>(TaskType::SOURCE){}
     SourceTask(Task<E> t):Task<E>(t){}
-    virtual E Execute(E &event){
+
+    virtual E ExecuteInternal(E &event){
         bool status = true;
         status = status && Initialize(event);
         E output;
@@ -71,6 +78,7 @@ struct SourceTask: public Task<E>{
         status = status && Finalize(event);
         return output;
     }
+
 protected:
     virtual bool Initialize(E &event) = 0;
     virtual E Run(E &event) = 0;
@@ -79,13 +87,16 @@ protected:
 template<typename E,  typename std::enable_if<std::is_base_of<Event, E>::value>::type * = nullptr>
 struct KeyByTask: public Task<E>{
     KeyByTask():Task<E>(TaskType::KEYBY){}
-    virtual size_t Execute(E &event){
+    KeyByTask(Task<E> t):Task<E>(t){}
+    virtual E ExecuteInternal(E &event){
         bool status = true;
         status = status && Initialize(event);
         size_t output;
         if(status) output = Run(event);
         status = status && Finalize(event);
-        return output;
+        E output_event;
+        output_event.id_ = std::to_string(output);
+        return output_event;
     }
 protected:
     virtual bool Initialize(E &event) = 0;
@@ -95,11 +106,13 @@ protected:
 template<typename E, typename std::enable_if<std::is_base_of<Event, E>::value>::type * = nullptr>
 struct SinkTask: public Task<E>{
     SinkTask():Task<E>(TaskType::SINK){}
-    virtual void Execute(E &event){
+    SinkTask(Task<E> t):Task<E>(t){}
+    virtual E ExecuteInternal(E &event){
         bool status = true;
         status = status && Initialize(event);
         if(status) Run(event);
         status = status && Finalize(event);
+        return event;
     }
 protected:
     virtual bool Initialize(E &event) = 0;
@@ -121,7 +134,9 @@ protected:
     }
 public:
     uint32_t job_id_;
-    Job(uint32_t job_id): source_(),job_id_(job_id){}
+    Job(uint32_t job_id): source_(),job_id_(job_id){
+
+    }
     Job(const Job &other): source_(other.source_),job_id_(other.job_id_) {}
     Job(Job &other): source_(other.source_),job_id_(other.job_id_) {}
     /*Define Assignment Operator*/
