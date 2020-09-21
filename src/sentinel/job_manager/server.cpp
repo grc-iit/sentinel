@@ -112,6 +112,8 @@ std::vector<std::tuple<uint32_t, uint16_t, task_id>> sentinel::job_manager::Serv
                 break;
             }
             case TaskType::SINK:{
+                workmanager_id newWorkermanager = reversed_loadMap.begin()->second;
+                next_tasks.push_back(std::tuple<uint32_t,uint16_t, task_id>(newWorkermanager, 0, task->id_));
                 break;
             }
         }

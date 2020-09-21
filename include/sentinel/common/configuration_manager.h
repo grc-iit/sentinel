@@ -80,7 +80,7 @@ namespace sentinel {
                                  WORKERMANAGER_EXECUTABLE("${HOME}/projects/rhea/build/sentinel/sentinel_worker_manager"),
                                  JOBMANAGER_COUNT(1),
                                  WORKERMANAGER_COUNT(1),
-                                 WORKERTHREAD_COUNT(4),
+                                 WORKERTHREAD_COUNT(8),
                                  WORKERMANAGER_EPOCH_MS(50),
                                  WORKERMANAGER_UPDATE_MIN_TASKS(256),
                                  WORKERTHREAD_TIMOUT_MS(100),
