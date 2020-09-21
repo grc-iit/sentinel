@@ -128,9 +128,9 @@ bool sentinel::worker_manager::Server::AssignTask(uint32_t worker_thread_id, uin
     ++num_tasks_assigned_;
 
     //Update Job Manager
-    if(ReadyToUpdateJobManager()) {
-        UpdateJobManager();
-    }
+//    if(ReadyToUpdateJobManager()) {
+//        UpdateJobManager();
+//    }
     return true;
 }
 
