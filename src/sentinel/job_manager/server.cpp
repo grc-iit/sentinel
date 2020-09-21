@@ -7,7 +7,6 @@ void sentinel::job_manager::Server::Run(std::future<void> futureObj,common::Daem
 }
 
 void sentinel::job_manager::Server::RunInternal(std::future<void> futureObj) {
-    this->SubmitJob(0,1);
     while(futureObj.wait_for(std::chrono::milliseconds(1)) == std::future_status::timeout){
         usleep(10000);
     }
