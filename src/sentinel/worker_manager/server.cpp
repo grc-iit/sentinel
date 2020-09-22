@@ -114,8 +114,9 @@ bool sentinel::worker_manager::Server::UpdateJobManager() {
     double time_ms = epoch_timer_.endTime();
     int num_tasks_queued = GetNumTasksQueued();
     WorkerManagerStats wms(time_ms, num_tasks_assigned_, num_tasks_queued);
-    auto check = true; //job_manager->UpdateWorkerManagerStats(rank_, wms); //TODO: Re-enable
+    auto check = job_manager->UpdateWorkerManagerStats(rank_, wms);
     epoch_timer_.startTime();
+    num_tasks_assigned_ = 0;
     return check;
 }
 
@@ -159,7 +160,7 @@ std::tuple<uint32_t,uint32_t,Event> sentinel::worker_manager::Worker::GetTask() 
 }
 
 void sentinel::worker_manager::Worker::ExecuteTask(std::tuple<uint32_t,uint32_t,Event> id) {
-    AUTO_TRACER("sentinel::worker_manager::Worker::ExecuteTask", task_id);
+    AUTO_TRACER("sentinel::worker_manager::Worker::ExecuteTask");
     std::shared_ptr<Job<Event>> job = ClassLoader().LoadClass<Job<Event>>(std::get<0>(id));
     std::shared_ptr<Task<Event>> task = job->GetTask(std::get<1>(id));
     std::function<bool(uint32_t, uint32_t, Event &)> emit_function(std::bind(&sentinel::worker_manager::Worker::EmitCallback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
@@ -188,7 +189,7 @@ void sentinel::worker_manager::Worker::GetAndExecuteTask() {
 }
 
 void sentinel::worker_manager::Worker::Run(std::future<void> loop_cond,Server* server) {
-    AUTO_TRACER("sentinel::worker_manager::Worker::Run", task_id);
+    AUTO_TRACER("sentinel::worker_manager::Worker::Run");
     server_=server;
     do {
         while (queue_.Size() > 0) {
@@ -198,7 +199,7 @@ void sentinel::worker_manager::Worker::Run(std::future<void> loop_cond,Server* s
 }
 
 void sentinel::worker_manager::Worker::Enqueue(std::tuple<uint32_t,uint32_t,Event> id) {
-    AUTO_TRACER("sentinel::worker_manager::Worker::Enqueue", task_id);
+    AUTO_TRACER("sentinel::worker_manager::Worker::Enqueue");
     queue_.Push(id);
 }
 

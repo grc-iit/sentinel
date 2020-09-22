@@ -9,28 +9,14 @@
 #include "server.h"
 #include <mpi.h>
 
-class WorkerManagerArgs : public common::args::ArgMap {
-private:
-    void VerifyArgs(void) {}
-
-public:
-    void Usage(void) {
-        std::cout << "Usage: ./worker_manager -[param-id] [value] ... " << std::endl;
-        std::cout << "[string]: The config file for sentinel. Default is no config." << std::endl;
-    }
-
-    WorkerManagerArgs(int argc, char **argv) {
-        AddOpt("", common::args::ArgType::kString, "");
-        ArgIter(argc, argv);
-        VerifyArgs();
-    }
-};
-
 int main(int argc, char **argv) {
     MPI_Init(&argc,&argv);
-    WorkerManagerArgs args(argc, argv);
-    COMMON_CONF->CONFIGURATION_FILE = args.GetStringOpt("");
-    SENTINEL_CONF->CONFIGURATION_FILE = args.GetStringOpt("");
+    std::string conf;
+    if(argc >= 2) {
+        conf = argv[1];
+    }
+    COMMON_CONF->CONFIGURATION_FILE = conf;
+    SENTINEL_CONF->CONFIGURATION_FILE = conf;
     COMMON_CONF->LoadConfiguration();
     auto daemon = basket::Singleton<common::Daemon<sentinel::worker_manager::Server>>::GetInstance();
     daemon->Run();

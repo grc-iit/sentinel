@@ -8,11 +8,17 @@ include_directories(src)
 include_directories(include)
 include_directories(${CMAKE_SOURCE_DIR}/scs_io_common/include)
 
+#Debug flags
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DCOMMON_DEBUG_MSG")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DCOMMON_DEBUG_TIMER")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DCOMMON_DEBUG_TRACE")
+
+
 set(LIBS -lpthread -lbasket -lrpc  -lboost_system -lboost_filesystem -lmpi -L${CMAKE_BINARY_DIR}/scs_io_common -lscs_io_common -ldl)
 
 set(SENTINEL_COMMON include/sentinel/common/configuration_manager.h include/sentinel/common/data_structures.h
         include/sentinel/common/enumerations.h include/sentinel/common/error_codes.h include/sentinel/common/error_definition.h
-        include/sentinel/common/debug.h ../scs_io_common/include/common/daemon.h)
+        ../scs_io_common/include/common/daemon.h)
 
 set(SENTINEL_LIB ${SENTINEL_COMMON} src/sentinel/job_manager/client.cpp include/sentinel/job_manager/client.h src/sentinel/worker_manager/client.cpp include/sentinel/worker_manager/client.h src/sentinel/monitor/client.cpp include/sentinel/monitor/client.h)
 add_library(sentinel SHARED ${SENTINEL_LIB})
