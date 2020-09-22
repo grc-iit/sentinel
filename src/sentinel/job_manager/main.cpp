@@ -1,13 +1,32 @@
 #include <mpi.h>
 #include <basket.h>
 #include <common/daemon.h>
+#include <common/arguments.h>
 #include <sentinel/job_manager/Server.h>
 #include <sentinel/common/configuration_manager.h>
+
+class JobManagerArgs : public common::args::ArgMap {
+private:
+    void VerifyArgs(void) {}
+
+public:
+    void Usage(void) {
+        std::cout << "Usage: ./job_manager -[param-id] [value] ... " << std::endl;
+        std::cout << "-conf [string]: The config file for sentinel. Default is no config." << std::endl;
+    }
+
+    JobManagerArgs(int argc, char **argv) {
+        AddOpt("-conf", common::args::ArgType::kString, "");
+        ArgIter(argc, argv);
+        VerifyArgs();
+    }
+};
 
 int main(int argc, char* argv[]){
     MPI_Init(&argc,&argv);
     MPI_Barrier(MPI_COMM_WORLD);
-    if(argc > 1) SENTINEL_CONF->CONFIGURATION_FILE=argv[1];
+    JobManagerArgs args(argc, argv);
+    SENTINEL_CONF->CONFIGURATION_FILE = args.GetStringOpt("-conf");
     BASKET_CONF->BACKED_FILE_DIR=SENTINEL_CONF->JOBMANAGER_DIR;
     CharStruct log = "./single_node_jobmanager.log";
     auto daemon = basket::Singleton<common::Daemon<sentinel::job_manager::Server>>::GetInstance(log);

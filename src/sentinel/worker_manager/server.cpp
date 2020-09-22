@@ -114,7 +114,7 @@ bool sentinel::worker_manager::Server::UpdateJobManager() {
     double time_ms = epoch_timer_.endTime();
     int num_tasks_queued = GetNumTasksQueued();
     WorkerManagerStats wms(time_ms, num_tasks_assigned_, num_tasks_queued);
-    auto check = job_manager->UpdateWorkerManagerStats(rank_, wms);
+    auto check = true; //job_manager->UpdateWorkerManagerStats(rank_, wms); //TODO: Re-enable
     epoch_timer_.startTime();
     return check;
 }
