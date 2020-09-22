@@ -26,8 +26,10 @@ int main(int argc, char* argv[]){
     MPI_Init(&argc,&argv);
     MPI_Barrier(MPI_COMM_WORLD);
     JobManagerArgs args(argc, argv);
+    COMMON_CONF->CONFIGURATION_FILE = args.GetStringOpt("-conf");
     SENTINEL_CONF->CONFIGURATION_FILE = args.GetStringOpt("-conf");
     CharStruct log = "./single_node_jobmanager.log";
+    COMMON_CONF->LoadConfiguration();
     auto daemon = basket::Singleton<common::Daemon<sentinel::job_manager::Server>>::GetInstance(log);
     daemon->Run();
     return 0;

@@ -29,7 +29,9 @@ public:
 int main(int argc, char **argv) {
     MPI_Init(&argc,&argv);
     WorkerManagerArgs args(argc, argv);
+    COMMON_CONF->CONFIGURATION_FILE = args.GetStringOpt("");
     SENTINEL_CONF->CONFIGURATION_FILE = args.GetStringOpt("");
+    COMMON_CONF->LoadConfiguration();
     auto daemon = basket::Singleton<common::Daemon<sentinel::worker_manager::Server>>::GetInstance();
     daemon->Run();
     MPI_Finalize();
