@@ -20,9 +20,8 @@ typedef struct Job2: public Job{
         return std::make_shared<Task>();
     }
 
-    uint32_t GetNextTaskId(uint32_t task_id_){
-        printf("Test Job1's GetNextId function....\n");
-        return task_id_ + 1;
+    void CreateDag(){
+        printf("Job2 create Dag\n");
     }
 };
 
