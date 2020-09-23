@@ -26,9 +26,8 @@ namespace sentinel {
     protected:
 
         void LoadChildConfigurations(void *doc_) override {
-            rapidjson::Document* doc=NULL;
-           if(doc !=NULL) doc = (rapidjson::Document*)doc_;
-            config(doc, "JOBMANAGER_LISTS", JOBMANAGER_HOST_FILE);
+            rapidjson::Document* doc= (rapidjson::Document*)doc_;
+            config(doc, "JOBMANAGER_HOST_FILE", JOBMANAGER_HOST_FILE);
             config(doc, "WORKERMANAGER_HOST_FILE", WORKERMANAGER_HOST_FILE);
             config(doc, "JOBMANAGER_PORT", JOBMANAGER_PORT);
             config(doc, "WORKERMANAGER_PORT", WORKERMANAGER_PORT);
@@ -36,7 +35,6 @@ namespace sentinel {
             config(doc, "WORKERMANAGER_RPC_THREADS", WORKERMANAGER_RPC_THREADS);
             config(doc, "JOBMANAGER_DIR", JOBMANAGER_DIR);
             config(doc, "WORKERMANAGER_DIR", WORKERMANAGER_DIR);
-            config(doc, "CONFIGURATION_FILE", CONFIGURATION_FILE);
             config(doc, "WORKERMANAGER_DINAMIC_HOSTFILE", WORKERMANAGER_DINAMIC_HOSTFILE);
             config(doc, "WORKERMANAGER_EXECUTABLE", WORKERMANAGER_EXECUTABLE);
             config(doc, "JOBMANAGER_COUNT", JOBMANAGER_COUNT);
@@ -54,7 +52,6 @@ namespace sentinel {
         uint16_t JOBMANAGER_PORT, WORKERMANAGER_PORT;
         uint16_t JOBMANAGER_RPC_THREADS, WORKERMANAGER_RPC_THREADS;
         CharStruct JOBMANAGER_DIR, WORKERMANAGER_DIR;
-        CharStruct CONFIGURATION_FILE;
         CharStruct WORKERMANAGER_DINAMIC_HOSTFILE;
         CharStruct WORKERMANAGER_EXECUTABLE;
         uint16_t JOBMANAGER_COUNT, WORKERMANAGER_COUNT;
@@ -66,7 +63,8 @@ namespace sentinel {
         std::vector<CharStruct> WORKERMANAGER_LISTS;
 
 
-        ConfigurationManager() : JOBMANAGER_HOST_FILE("${HOME}/projects/rhea/sentinel/conf/hostfile"),
+        ConfigurationManager() : common::ConfigurationManager("/home/user/sentinel/conf/base_rhea.conf"),
+                                 JOBMANAGER_HOST_FILE("${HOME}/projects/rhea/sentinel/conf/hostfile"),
                                  WORKERMANAGER_HOST_FILE("${HOME}/projects/rhea/sentinel/conf/hostfile"),
                                  JOBMANAGER_PORT(9000),
                                  WORKERMANAGER_PORT(10000),
@@ -75,7 +73,6 @@ namespace sentinel {
                                  DEFAULT_RESOURCE_ALLOCATION(0, 1,1,4),
                                  JOBMANAGER_DIR("/dev/shm/hari/single_node_jobmanager_server"), //TODO: CHECK if they have to be different
                                  WORKERMANAGER_DIR("/dev/shm/hari/single_node_workermanager_server"),
-                                 CONFIGURATION_FILE("/home/user/sentinel/conf/base_rhea.conf"),
                                  WORKERMANAGER_DINAMIC_HOSTFILE("${HOME}/projects/rhea/sentinel/conf/hostfile"),
                                  WORKERMANAGER_EXECUTABLE("${HOME}/projects/rhea/build/sentinel/sentinel_worker_manager"),
                                  JOBMANAGER_COUNT(1),

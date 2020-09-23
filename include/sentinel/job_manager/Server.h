@@ -10,7 +10,7 @@
 #include <basket/communication/rpc_factory.h>
 #include <sentinel/common/data_structures.h>
 #include <sentinel/common/configuration_manager.h>
-#include <sentinel/common/debug.h>
+#include <common/debug.h>
 #include <rpc/client.h>
 #include <common/class_loader.h>
 #include <common/data_structure.h>
@@ -37,6 +37,7 @@ namespace sentinel::job_manager{
         std::unordered_map<task_id, std::pair<workmanager_id, task_id>> destinationMap;
 
         std::mutex mtx_allocate;
+        std::mutex mtx_resources;
         std::unordered_map<workmanager_id, std::pair<CharStruct,uint32_t>> available_workermanagers;
         std::unordered_map<job_id, std::vector<std::tuple<workmanager_id,uint32_t,uint32_t>>> used_resources;
 
