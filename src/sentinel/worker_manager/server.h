@@ -46,7 +46,7 @@ namespace sentinel::worker_manager {
         std::shared_ptr<sentinel::job_manager::client> job_manager;
         sentinel::ThreadPool<Worker> pool_;
         std::shared_ptr<RPC> client_rpc_;
-        uint32_t num_tasks_assigned_ = 0, min_tasks_assigned_update_;
+        uint32_t num_tasks_assigned_, min_tasks_assigned_update_;
         common::debug::Timer epoch_timer_;
         uint32_t epoch_msec_;
 
@@ -56,7 +56,7 @@ namespace sentinel::worker_manager {
 
         bool UpdateJobManager();
 
-        std::shared_ptr<sentinel::worker_manager::Worker> FindMinimumQueue(uint32_t worker_thread_id);
+        std::shared_ptr<sentinel::worker_manager::Worker> FindMinimumQueue(uint16_t worker_tid_min, uint16_t worker_tid_count);
 
         int GetNumTasksQueued(void);
 
@@ -68,7 +68,7 @@ namespace sentinel::worker_manager {
 
         void Run(std::future<void> loop_cond, common::Daemon<Server> *obj);
 
-        bool AssignTask(uint32_t worker_thread_id, uint32_t job_id, uint32_t task_id, Event &event);
+        bool AssignTask(uint16_t worker_tid_min, uint16_t worker_tid_count, uint32_t job_id, uint32_t task_id, Event &event);
 
         bool FinalizeWorkerManager();
     };

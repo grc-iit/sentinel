@@ -43,7 +43,7 @@ bool sentinel::job_manager::Server::SubmitJob(uint32_t jobId, uint32_t num_sourc
          * TODO: Send used resources to workermanager.
          * For the specific job, for the specific workermanager send the range
          */
-        workermanager_client->AssignTask(workermanager,0, jobId, collector->id_,event);
+        workermanager_client->AssignTask(workermanager,0,0,jobId, collector->id_,event);
         //Lets ensure that load map is not empty
         WorkerManagerStats wms = WorkerManagerStats();
         UpdateWorkerManagerStats(workermanager, wms);
@@ -110,10 +110,10 @@ std::pair<bool, WorkerManagerStats> sentinel::job_manager::Server::GetWorkerMana
     return std::pair<bool, WorkerManagerStats>(true, possible_load->second);
 }
 
-std::vector<std::tuple<uint32_t, uint16_t, task_id>> sentinel::job_manager::Server::GetNextNode(uint32_t job_id, uint32_t currentTaskId, Event event){
+std::vector<std::tuple<uint32_t, uint16_t, uint16_t, task_id>> sentinel::job_manager::Server::GetNextNode(uint32_t job_id, uint32_t currentTaskId, Event event){
     AUTO_TRACER("job_manager::GetNextNode::resources", job_id, currentTaskId);
     auto newTasks = jobs.at(job_id)->GetTask(currentTaskId)->links;
-    auto next_tasks = std::vector<std::tuple<uint32_t, uint16_t, task_id>>();
+    auto next_tasks = std::vector<std::tuple<uint32_t, uint16_t, uint16_t, task_id>>();
     for(auto task:newTasks){
 
         switch(task->type_){
@@ -143,15 +143,13 @@ std::vector<std::tuple<uint32_t, uint16_t, task_id>> sentinel::job_manager::Serv
                     auto hash = atoi(hash_event.id_.c_str());
                     auto worker_index = hash % total_workers;
                     uint16_t worker_thread_id = worker_thread_hash(hash) % SENTINEL_CONF->WORKERTHREAD_COUNT;
-                    next_tasks.push_back( std::tuple<uint32_t,uint16_t, task_id>(worker_index,worker_thread_id , childtask->id_));
+                    next_tasks.push_back( std::tuple<uint32_t,uint16_t,uint16_t,task_id>(worker_index,worker_thread_id,1,childtask->id_));
                 }
-//                AUTO_TRACER("job_manager::Server::THING");
-//                AUTO_TRACER("job_manager::Server::GetNextNode::KEYBY", used_resources);
                 break;
             }
             case TaskType::SINK:{
                 workmanager_id newWorkermanager = reversed_loadMap.begin()->second;
-                next_tasks.push_back(std::tuple<uint32_t,uint16_t, task_id>(newWorkermanager, 0, task->id_));
+                next_tasks.push_back(std::tuple<uint32_t,uint16_t,uint16_t,task_id>(newWorkermanager,0,0,task->id_));
                 break;
             }
         }

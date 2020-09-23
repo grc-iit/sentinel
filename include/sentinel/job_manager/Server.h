@@ -58,7 +58,7 @@ namespace sentinel::job_manager{
             std::function<bool(uint32_t)> functionTerminateJob(std::bind(&sentinel::job_manager::Server::TerminateJob, this, std::placeholders::_1));
             std::function<bool(uint32_t,WorkerManagerStats&)> functionUpdateWorkerManagerStats(std::bind(&sentinel::job_manager::Server::UpdateWorkerManagerStats, this, std::placeholders::_1, std::placeholders::_2));
             std::function<std::pair<bool, WorkerManagerStats>(uint32_t)> functionGetWorkerManagerStats(std::bind(&sentinel::job_manager::Server::GetWorkerManagerStats, this, std::placeholders::_1));
-            std::function<std::vector<std::tuple<uint32_t, uint16_t, task_id>>(uint32_t job_id, uint32_t currentTaskId, Event e)> functionGetNextNode(std::bind(&sentinel::job_manager::Server::GetNextNode, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+            std::function<std::vector<std::tuple<uint32_t, uint16_t, uint16_t, task_id>>(uint32_t job_id, uint32_t currentTaskId, Event e)> functionGetNextNode(std::bind(&sentinel::job_manager::Server::GetNextNode, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
             std::function<bool(ResourceAllocation&)> functionChangeResourceAllocation(std::bind(&sentinel::job_manager::Server::ChangeResourceAllocation, this, std::placeholders::_1));
             rpc->bind("SubmitJob", functionSubmitJob);
             rpc->bind("TerminateJob", functionTerminateJob);
@@ -79,7 +79,7 @@ namespace sentinel::job_manager{
         bool TerminateJob(uint32_t jobId);
         bool UpdateWorkerManagerStats(uint32_t workerManagerId, WorkerManagerStats &stats);
         std::pair<bool, WorkerManagerStats> GetWorkerManagerStats(uint32_t workerManagerId);
-        std::vector<std::tuple<uint32_t, uint16_t, task_id>> GetNextNode(uint32_t job_id, uint32_t currentTaskId, Event e);
+        std::vector<std::tuple<uint32_t, uint16_t, uint16_t, task_id>> GetNextNode(uint32_t job_id, uint32_t currentTaskId, Event e);
         bool ChangeResourceAllocation(ResourceAllocation &resourceAllocation);
     };
 }
