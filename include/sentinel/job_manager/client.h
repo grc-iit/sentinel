@@ -10,7 +10,7 @@
 #include <basket/communication/rpc_factory.h>
 #include <sentinel/common/data_structures.h>
 #include <sentinel/common/configuration_manager.h>
-#include <sentinel/common/debug.h>
+#include <common/debug.h>
 #include <rpc/client.h>
 
 namespace sentinel::job_manager {

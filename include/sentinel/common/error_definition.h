@@ -7,7 +7,7 @@
 
 #include <string>
 #include <exception>
-#include <sentinel/common/debug.h>
+#include <common/debug.h>
 
 typedef struct ErrorCode{
 private:

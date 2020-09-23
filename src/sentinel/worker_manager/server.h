@@ -9,7 +9,7 @@
 #include "thread_pool.h"
 #include "queue.h"
 #include <basket.h>
-#include <sentinel/common/debug.h>
+#include <common/debug.h>
 #include <common/daemon.h>
 #include <sentinel/common/data_structures.h>
 #include <sentinel/job_manager/client.h>
