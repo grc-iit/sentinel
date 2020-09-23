@@ -37,6 +37,7 @@ namespace sentinel::job_manager{
         std::unordered_map<task_id, std::pair<workmanager_id, task_id>> destinationMap;
 
         std::mutex mtx_allocate;
+        std::mutex mtx_resources;
         std::unordered_map<workmanager_id, std::pair<CharStruct,uint32_t>> available_workermanagers;
         std::unordered_map<job_id, std::vector<std::tuple<workmanager_id,uint32_t,uint32_t>>> used_resources;
 
