@@ -20,29 +20,33 @@
 #include <basket/common/singleton.h>
 #include <common/daemon.h>
 
-typedef uint32_t job_id, workmanager_id, task_id;
+typedef uint32_t JobId, WorkerManagerId, TaskId;
+typedef uint16_t ThreadId, StartThreadId, EndThreadId;
+typedef CharStruct NodeName;
 
 namespace sentinel::job_manager{
     class Server {
     private:
         common::Daemon<Server> * daemon;
         std::shared_ptr<RPC> rpc;
-        std::unordered_map<workmanager_id, WorkerManagerStats> loadMap;
-        std::map<WorkerManagerStats, workmanager_id> reversed_loadMap;
-        std::mutex mtx_loadmap;
-
         std::shared_ptr<sentinel::worker_manager::Client> workermanager_client;
+        mutable std::shared_mutex load_mutex_, job_mutex_, resources_mutex_;
 
-        std::unordered_map<workmanager_id, std::vector<task_id>> taskMap;
-        std::unordered_map<task_id, std::pair<workmanager_id, task_id>> destinationMap;
 
-        std::mutex mtx_allocate;
-        std::mutex mtx_resources;
-        std::unordered_map<workmanager_id, std::pair<CharStruct,uint32_t>> available_workermanagers;
-        std::unordered_map<job_id, std::vector<std::tuple<workmanager_id,uint32_t,uint32_t>>> used_resources;
+        // Maintains load of each worker manager
+        std::unordered_map<WorkerManagerId, WorkerManagerStats> loadMap;
+        // Maintains lowest load worker on top
+        std::map<WorkerManagerStats, WorkerManagerId> reversed_loadMap;
 
-        std::unordered_map<job_id, std::shared_ptr<Job<Event>>> jobs;
-        bool SpawnWorkerManagers(uint32_t required_threads, job_id job_id_);
+        // Maintains available resources per worker manager instance
+        std::unordered_map<WorkerManagerId, std::pair<NodeName,ThreadId>> available_workermanagers;
+        // Maintains resources allocated per job
+        std::unordered_map<JobId, std::vector<std::tuple<WorkerManagerId,StartThreadId,EndThreadId>>> used_resources;
+        // Maintains loaded job per id
+        std::unordered_map<JobId, std::shared_ptr<Job<Event>>> jobs;
+
+
+        bool SpawnWorkerManagers(ThreadId required_threads, JobId job_id);
         bool TerminateWorkerManagers(ResourceAllocation &resourceAllocation);
 
         void RunInternal(std::future<void> futureObj);
@@ -54,11 +58,11 @@ namespace sentinel::job_manager{
             auto basket=BASKET_CONF;
             rpc=basket::Singleton<RPCFactory>::GetInstance()->GetRPC(BASKET_CONF->RPC_PORT);
 
-            std::function<bool(uint32_t,uint32_t)> functionSubmitJob(std::bind(&sentinel::job_manager::Server::SubmitJob, this, std::placeholders::_1, std::placeholders::_2));
-            std::function<bool(uint32_t)> functionTerminateJob(std::bind(&sentinel::job_manager::Server::TerminateJob, this, std::placeholders::_1));
-            std::function<bool(uint32_t,WorkerManagerStats&)> functionUpdateWorkerManagerStats(std::bind(&sentinel::job_manager::Server::UpdateWorkerManagerStats, this, std::placeholders::_1, std::placeholders::_2));
-            std::function<std::pair<bool, WorkerManagerStats>(uint32_t)> functionGetWorkerManagerStats(std::bind(&sentinel::job_manager::Server::GetWorkerManagerStats, this, std::placeholders::_1));
-            std::function<std::vector<std::tuple<uint32_t, uint16_t, uint16_t, task_id>>(uint32_t job_id, uint32_t currentTaskId, Event e)> functionGetNextNode(std::bind(&sentinel::job_manager::Server::GetNextNode, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+            std::function<bool(JobId,TaskId)> functionSubmitJob(std::bind(&sentinel::job_manager::Server::SubmitJob, this, std::placeholders::_1, std::placeholders::_2));
+            std::function<bool(JobId)> functionTerminateJob(std::bind(&sentinel::job_manager::Server::TerminateJob, this, std::placeholders::_1));
+            std::function<bool(WorkerManagerId,WorkerManagerStats&)> functionUpdateWorkerManagerStats(std::bind(&sentinel::job_manager::Server::UpdateWorkerManagerStats, this, std::placeholders::_1, std::placeholders::_2));
+            std::function<std::pair<bool, WorkerManagerStats>(WorkerManagerId)> functionGetWorkerManagerStats(std::bind(&sentinel::job_manager::Server::GetWorkerManagerStats, this, std::placeholders::_1));
+            std::function<std::vector<std::tuple<JobId ,ThreadId ,ThreadId , TaskId>>(JobId, TaskId, Event)> functionGetNextNode(std::bind(&sentinel::job_manager::Server::GetNextNode, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
             std::function<bool(ResourceAllocation&)> functionChangeResourceAllocation(std::bind(&sentinel::job_manager::Server::ChangeResourceAllocation, this, std::placeholders::_1));
             rpc->bind("SubmitJob", functionSubmitJob);
             rpc->bind("TerminateJob", functionTerminateJob);
@@ -75,11 +79,11 @@ namespace sentinel::job_manager{
                 i++;
             }
         }
-        bool SubmitJob(uint32_t jobId, uint32_t num_sources);
-        bool TerminateJob(uint32_t jobId);
-        bool UpdateWorkerManagerStats(uint32_t workerManagerId, WorkerManagerStats &stats);
-        std::pair<bool, WorkerManagerStats> GetWorkerManagerStats(uint32_t workerManagerId);
-        std::vector<std::tuple<uint32_t, uint16_t, uint16_t, task_id>> GetNextNode(uint32_t job_id, uint32_t currentTaskId, Event e);
+        bool SubmitJob(JobId jobId, TaskId num_sources);
+        bool TerminateJob(JobId jobId);
+        bool UpdateWorkerManagerStats(WorkerManagerId workerManagerId, WorkerManagerStats &stats);
+        std::pair<bool, WorkerManagerStats> GetWorkerManagerStats(WorkerManagerId workerManagerId);
+        std::vector<std::tuple<JobId ,ThreadId ,ThreadId, TaskId>> GetNextNode(JobId job_id, TaskId currentTaskId, Event e);
         bool ChangeResourceAllocation(ResourceAllocation &resourceAllocation);
     };
 }

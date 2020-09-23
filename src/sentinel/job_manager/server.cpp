@@ -7,36 +7,43 @@ void sentinel::job_manager::Server::Run(std::future<void> futureObj,common::Daem
 }
 
 void sentinel::job_manager::Server::RunInternal(std::future<void> futureObj) {
-//    this->SubmitJob(0,1);
     while(futureObj.wait_for(std::chrono::milliseconds(1)) == std::future_status::timeout){
         usleep(10000);
     }
 }
 
-bool sentinel::job_manager::Server::SubmitJob(uint32_t jobId, uint32_t num_sources){
+bool sentinel::job_manager::Server::SubmitJob(JobId jobId, TaskId num_sources){
+    AUTO_TRACER("sentinel::job_manager::Server::SubmitJob ", used_resources.find(jobId)->first, used_resources.find(jobId)->second.data());
     auto classLoader = ClassLoader();
     std::shared_ptr<Job<Event>> job = classLoader.LoadClass<Job<Event>>(jobId);
+    std::unique_lock job_lock(job_mutex_);
     jobs.insert(std::make_pair(jobId, job));
+    job_lock.unlock();
 
     ResourceAllocation defaultResourceAllocation = SENTINEL_CONF->DEFAULT_RESOURCE_ALLOCATION;
     defaultResourceAllocation.job_id_ = jobId;
 
-    std::vector<std::tuple<workmanager_id,uint32_t,uint32_t>> vect;
+    auto vect = std::vector<std::tuple<WorkerManagerId ,StartThreadId ,EndThreadId>>();
+    std::unique_lock resource_lock(resources_mutex_);
     used_resources.insert(std::make_pair(jobId, vect));
-    for(auto kv : used_resources) {
-        std::cout <<"keySJ: " << kv.first <<std::endl;
-    }
-    AUTO_TRACER("sentinel::job_manager::Server::SubmitJob ", used_resources.find(jobId)->first, used_resources.find(jobId)->second.data());
+    resource_lock.unlock();
+
     auto threads = defaultResourceAllocation.num_nodes_ * defaultResourceAllocation.num_procs_per_node * defaultResourceAllocation.num_threads_per_proc;
     SpawnWorkerManagers(threads, jobId);
+
     sleep(1);
+
     auto collector = job->GetTask();
     auto current_worker_index = 0;
+
+    std::shared_lock resource_lock_shared(job_mutex_);
     auto workers = used_resources.at(jobId);
+    resource_lock_shared.unlock();
+
     auto current_worker_thread = std::get<1>(workers[0]);
     for(int i=0;i<num_sources;i++){
         auto end_thread = std::get<2>(workers[current_worker_index]);
-        workmanager_id workermanager = current_worker_index;
+        WorkerManagerId workermanager = current_worker_index;
         Event event;
         event.id_ = std::to_string(i);
         /*
@@ -59,97 +66,91 @@ bool sentinel::job_manager::Server::SubmitJob(uint32_t jobId, uint32_t num_sourc
     std::cout << "job Spawned" <<std::endl;
 }
 
-bool sentinel::job_manager::Server::TerminateJob(uint32_t jobId){
-//    AUTO_TRACER("sentinel::job_manager::Server::TerminateJob");
-//    auto workermanager_client = basket::Singleton<sentinel::worker_manager::Client>::GetInstance();
-//
-//    auto possible_job = used_resources.find(jobId);
-//    if (possible_job == used_resources.end()) return false;
-//
-//    auto workermanagers_used = used_resources.at(jobId);
-//    for(auto workermanager_used:workermanagers_used){
-//        auto worker_index = std::get<0>(workermanager_used);
-//        auto start_thread = std::get<1>(workermanager_used);
-//        auto end_thread = std::get<2>(workermanager_used);
-//        /**
-//         * TODO: fixme for all edge cases.
-//         */
-//        if(start_thread == 0 && end_thread == SENTINEL_CONF->WORKERTHREAD_COUNT - 1){
-//            mtx_loadmap.lock();
-//            WorkerManagerStats reverse_lookup = loadMap.at(worker_index);
-//            loadMap.erase(worker_index);
-//            reversed_loadMap.erase(reverse_lookup);
-//            available_workermanagers.erase(worker_index);
-//            available_workermanagers.insert({worker_index, {SENTINEL_CONF->WORKERMANAGER_LISTS[worker_index],SENTINEL_CONF->WORKERTHREAD_COUNT}});
-//            mtx_loadmap.unlock();
-//            workermanager_client->FinalizeWorkerManager(worker_index);
-//        }
-//    }
-//    used_resources.erase(jobId);
+bool sentinel::job_manager::Server::TerminateJob(JobId jobId){
+    AUTO_TRACER("sentinel::job_manager::Server::TerminateJob");
+    std::shared_lock resource_lock(resources_mutex_);
+    auto possible_job = used_resources.find(jobId);
+    if (possible_job == used_resources.end()) return false;
+    auto workermanagers_used = used_resources.at(jobId);
+    resource_lock.unlock();
+    for(auto workermanager_used : workermanagers_used){
+        auto worker_index = std::get<0>(workermanager_used);
+        auto start_thread = std::get<1>(workermanager_used);
+        auto end_thread = std::get<2>(workermanager_used);
+        /**
+         * TODO: fixme for all edge cases.
+         */
+        if(start_thread == 0 && end_thread == SENTINEL_CONF->WORKERTHREAD_COUNT - 1){
+            std::unique_lock load_lock(load_mutex_);
+            WorkerManagerStats reverse_lookup = loadMap.at(worker_index);
+            loadMap.erase(worker_index);
+            reversed_loadMap.erase(reverse_lookup);
+            available_workermanagers.erase(worker_index);
+            available_workermanagers.insert({worker_index, {SENTINEL_CONF->WORKERMANAGER_LISTS[worker_index],SENTINEL_CONF->WORKERTHREAD_COUNT}});
+            load_lock.unlock();
+            workermanager_client->FinalizeWorkerManager(worker_index);
+        }
+    }
+    std::unique_lock resource_lock_ex(resources_mutex_);
+    used_resources.erase(jobId);
+    resource_lock_ex.unlock();
     return true;
 }
 
-bool sentinel::job_manager::Server::UpdateWorkerManagerStats(uint32_t workerManagerId, WorkerManagerStats &stats){
-     mtx_loadmap.lock();
+bool sentinel::job_manager::Server::UpdateWorkerManagerStats(WorkerManagerId workerManagerId, WorkerManagerStats &stats){
+    std::unique_lock load_lock(load_mutex_);
     auto possible_load = loadMap.find(workerManagerId);
     if (possible_load == loadMap.end()){
-        loadMap.insert(std::pair<workmanager_id, WorkerManagerStats>(workerManagerId, stats));
+        loadMap.insert(std::pair<WorkerManagerId, WorkerManagerStats>(workerManagerId, stats));
     }
     else {
         possible_load->second = stats;
         reversed_loadMap.erase(stats);
     }
-    reversed_loadMap.insert(std::pair<WorkerManagerStats, workmanager_id>(stats, workerManagerId));
-    mtx_loadmap.unlock();
+    reversed_loadMap.insert(std::pair<WorkerManagerStats, WorkerManagerId>(stats, workerManagerId));
+    load_lock.unlock();
     return true;
 }
 
-std::pair<bool, WorkerManagerStats> sentinel::job_manager::Server::GetWorkerManagerStats(uint32_t workerManagerId){
+std::pair<bool, WorkerManagerStats> sentinel::job_manager::Server::GetWorkerManagerStats(WorkerManagerId workerManagerId){
     auto possible_load = loadMap.find(workerManagerId);
     if (possible_load == loadMap.end()) return std::pair<bool, WorkerManagerStats>(false, WorkerManagerStats());
     return std::pair<bool, WorkerManagerStats>(true, possible_load->second);
 }
 
-std::vector<std::tuple<uint32_t, uint16_t, uint16_t, task_id>> sentinel::job_manager::Server::GetNextNode(uint32_t job_id, uint32_t currentTaskId, Event event){
+
+std::vector<std::tuple<JobId , ThreadId, ThreadId, TaskId>> sentinel::job_manager::Server::GetNextNode(JobId job_id, TaskId currentTaskId, Event event){
     AUTO_TRACER("job_manager::GetNextNode::resources", job_id, currentTaskId);
     auto newTasks = jobs.at(job_id)->GetTask(currentTaskId)->links;
-    auto next_tasks = std::vector<std::tuple<uint32_t, uint16_t, uint16_t, task_id>>();
+    auto next_tasks = std::vector<std::tuple<JobId , ThreadId, ThreadId, TaskId>>();
     for(auto task:newTasks){
-
         switch(task->type_){
             case TaskType::SOURCE:{
-//                workmanager_id newWorkermanager = reversed_loadMap.begin()->second;
-//                next_tasks.push_back(std::tuple<uint32_t,uint16_t, task_id>(newWorkermanager, 0, task->id_));
                 break;
             }
             case TaskType::KEYBY:{
                 AUTO_TRACER("job_manager::GetNextNode2::resources");
+                std::shared_lock resourced_lock(resources_mutex_);
                 auto iter = used_resources.find(job_id);
-                if(iter==used_resources.end()){
-                    std::cout << job_id <<std::endl;
-                    for(auto kv : used_resources) {
-                        std::cout <<"key: " << kv.first <<std::endl;
-                    }
-                    std::cout << "Job not spawned, resources not allocated" << std::endl;
-                    sleep(1);
-                    auto iter = used_resources.find(job_id);
-                }
                 size_t total_workers = iter->second.size();
                 std::hash<size_t> worker_thread_hash;
                 for(auto childtask:task->links){
                     auto child_event=event;
-                    child_event.id_ += std::to_string(childtask->id_)+std::to_string(childtask->job_id_);
+                    child_event.id_ += std::to_string(childtask->id_);
                     auto hash_event = task->Execute(event);
                     auto hash = atoi(hash_event.id_.c_str());
                     auto worker_index = hash % total_workers;
                     uint16_t worker_thread_id = worker_thread_hash(hash) % SENTINEL_CONF->WORKERTHREAD_COUNT;
-                    next_tasks.push_back( std::tuple<uint32_t,uint16_t,uint16_t,task_id>(worker_index,worker_thread_id,1,childtask->id_));
+                    next_tasks.push_back( std::tuple<JobId ,ThreadId, ThreadId, TaskId>(worker_index,worker_thread_id ,worker_thread_id, childtask->id_));
                 }
+                resourced_lock.unlock();
                 break;
             }
             case TaskType::SINK:{
-                workmanager_id newWorkermanager = reversed_loadMap.begin()->second;
-                next_tasks.push_back(std::tuple<uint32_t,uint16_t,uint16_t,task_id>(newWorkermanager,0,0,task->id_));
+                std::shared_lock load_lock(load_mutex_);
+                WorkerManagerId newWorkermanager = reversed_loadMap.begin()->second;
+                load_lock.unlock();
+                next_tasks.push_back(std::tuple<JobId ,ThreadId , TaskId>(newWorkermanager, 0, task->id_));
                 break;
             }
         }
@@ -163,11 +164,11 @@ std::vector<std::tuple<uint32_t, uint16_t, uint16_t, task_id>> sentinel::job_man
 bool sentinel::job_manager::Server::ChangeResourceAllocation(ResourceAllocation &resourceAllocation){
     auto threads = resourceAllocation.num_nodes_ * resourceAllocation.num_procs_per_node * resourceAllocation.num_threads_per_proc;
     if( resourceAllocation.num_nodes_ > 0) return SpawnWorkerManagers(threads,resourceAllocation.job_id_);
-    else if( resourceAllocation.num_nodes_ < 0) return TerminateWorkerManagers(resourceAllocation);
+    else if( resourceAllocation.num_nodes_ == 0) return TerminateWorkerManagers(resourceAllocation);
     return true;
 }
 
-bool sentinel::job_manager::Server::SpawnWorkerManagers(uint32_t required_threads, job_id job_id_) {
+bool sentinel::job_manager::Server::SpawnWorkerManagers(ThreadId required_threads, JobId job_id) {
     char* cmd = SENTINEL_CONF->WORKERMANAGER_EXECUTABLE.data();
 
     char * mpi_argv[2];
@@ -178,6 +179,7 @@ bool sentinel::job_manager::Server::SpawnWorkerManagers(uint32_t required_thread
     MPI_Info_create(&info);
     std::string hosts = "localhost";
     auto left_threads = required_threads;
+    std::unique_lock resourced_lock(resources_mutex_);
     auto available_worker_iter = available_workermanagers.begin();
     //TODO: throw error if no available workers.
     auto new_worker_spawn = std::vector<uint32_t>();
@@ -197,51 +199,41 @@ bool sentinel::job_manager::Server::SpawnWorkerManagers(uint32_t required_thread
         if(left_thread_in_worker > 0){
             available_workermanagers.insert({worker_index,{host,left_thread_in_worker}});
         }
-        auto used_resources_iter = used_resources.find(job_id_);
-        if(used_resources_iter==used_resources.end()){
-            std::cout << "resources not allocated, spawn process" << std::endl;
-        }
-        for(auto kv : used_resources) {
-            std::cout <<"keyWM: " << kv.first <<std::endl;
-        }
-        used_resources_iter->second.emplace_back(std::tuple<workmanager_id,uint32_t,uint32_t>(worker_index,start_thread,end_thread));
-        std::cout << "Set up respurces" << std::endl;
-        AUTO_TRACER("sentinel::job_manager::Server::SpawnWorkerManagers", used_resources.find(job_id_)->first, used_resources.find(job_id_)->second.data());
+        auto used_resources_iter = used_resources.find(job_id);
+        if(used_resources_iter != used_resources.end())
+            used_resources_iter->second.emplace_back(std::tuple<WorkerManagerId ,StartThreadId ,EndThreadId>(worker_index,start_thread,end_thread));
         left_threads -= can_use_threads;
 
     }
+    resourced_lock.unlock();
     if(new_worker_spawn.size() > 0){
         MPI_Info_set(info,"host", hosts.data());
         MPI_Comm workerManagerComm;
         int errcodes[new_worker_spawn.size()];
-
         MPI_Comm_spawn(cmd, mpi_argv, new_worker_spawn.size(), info, 0, MPI_COMM_WORLD, &workerManagerComm, errcodes );
-
         for(int i=0; i < new_worker_spawn.size(); i++){
             if( errcodes[i] != MPI_SUCCESS) throw ErrorException(SPAWN_WORKERMANAGER_FAILED);;
         }
     }
-
     return true;
 }
 
 bool sentinel::job_manager::Server::TerminateWorkerManagers(ResourceAllocation &resourceAllocation){
-//    auto workermanager_client = basket::Singleton<sentinel::worker_manager::Client>::GetInstance();
-//    for(int i=resourceAllocation.num_nodes_; i < 0; i++){
-//        mtx_loadmap.lock();
-//        workmanager_id workermanager_killed = reversed_loadMap.begin()->second;
-//        reversed_loadMap.erase(reversed_loadMap.begin());
-//        loadMap.erase(workermanager_killed);
-//        mtx_loadmap.unlock();
-//
-//
-//
-//        available_workermanagers.insert(std::make_pair(workermanager_killed, SENTINEL_CONF->WORKERMANAGER_LISTS[workermanager_killed]));
-//        auto list_workmanagers = used_resources.at(resourceAllocation.job_id_);
-//        list_workmanagers.erase(std::remove(list_workmanagers.begin(), list_workmanagers.end(), workermanager_killed), list_workmanagers.end());
-//
-//        if(!workermanager_client->FinalizeWorkerManager(workermanager_killed)) throw ErrorException(TERMINATE_WORKERMANAGER_FAILED);;
-//    }
+    auto workermanager_client = basket::Singleton<sentinel::worker_manager::Client>::GetInstance();
+    for(int i=resourceAllocation.num_nodes_; i < 0; i++){
+        std::unique_lock load_lock(load_mutex_);
+        WorkerManagerId workermanager_killed = reversed_loadMap.begin()->second;
+        reversed_loadMap.erase(reversed_loadMap.begin());
+        loadMap.erase(workermanager_killed);
+        load_lock.unlock();
+
+        std::unique_lock resourced_lock(resources_mutex_);
+        available_workermanagers.insert_or_assign(workermanager_killed, std::pair<CharStruct,uint32_t>(SENTINEL_CONF->WORKERMANAGER_LISTS[workermanager_killed],0));
+        auto list_workmanagers = used_resources.at(resourceAllocation.job_id_);
+        list_workmanagers.erase(std::remove(list_workmanagers.begin(), list_workmanagers.end(), workermanager_killed), list_workmanagers.end());
+        resourced_lock.unlock();
+        if(!workermanager_client->FinalizeWorkerManager(workermanager_killed)) throw ErrorException(TERMINATE_WORKERMANAGER_FAILED);;
+    }
     return true;
 }
 
