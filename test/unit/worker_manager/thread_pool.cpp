@@ -15,7 +15,7 @@ int main()
         pool.Assign(&worker_manager);
     }
     for(int i = 0; i < tp_sz; ++i) {
-        auto worker = pool.Get(i);
+        auto worker = pool.GetObj(i);
         Event e;
         worker->Enqueue(std::tuple<uint32_t,uint32_t,Event>(i,i,e));
     }

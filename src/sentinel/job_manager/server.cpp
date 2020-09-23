@@ -50,7 +50,7 @@ bool sentinel::job_manager::Server::SubmitJob(JobId jobId, TaskId num_sources){
          * TODO: Send used resources to workermanager.
          * For the specific job, for the specific workermanager send the range
          */
-        workermanager_client->AssignTask(workermanager,0, jobId, collector->id_,event);
+        workermanager_client->AssignTask(workermanager,0,0,jobId, collector->id_,event);
         //Lets ensure that load map is not empty
         WorkerManagerStats wms = WorkerManagerStats();
         UpdateWorkerManagerStats(workermanager, wms);
@@ -118,10 +118,11 @@ std::pair<bool, WorkerManagerStats> sentinel::job_manager::Server::GetWorkerMana
     return std::pair<bool, WorkerManagerStats>(true, possible_load->second);
 }
 
-std::vector<std::tuple<JobId ,ThreadId , TaskId>> sentinel::job_manager::Server::GetNextNode(JobId job_id, TaskId currentTaskId, Event event){
+
+std::vector<std::tuple<JobId , ThreadId, ThreadId, TaskId>> sentinel::job_manager::Server::GetNextNode(JobId job_id, TaskId currentTaskId, Event event){
     AUTO_TRACER("job_manager::GetNextNode::resources", job_id, currentTaskId);
     auto newTasks = jobs.at(job_id)->GetTask(currentTaskId)->links;
-    auto next_tasks = std::vector<std::tuple<JobId ,ThreadId , TaskId>>();
+    auto next_tasks = std::vector<std::tuple<JobId , ThreadId, ThreadId, TaskId>>();
     for(auto task:newTasks){
         switch(task->type_){
             case TaskType::SOURCE:{
@@ -140,7 +141,7 @@ std::vector<std::tuple<JobId ,ThreadId , TaskId>> sentinel::job_manager::Server:
                     auto hash = atoi(hash_event.id_.c_str());
                     auto worker_index = hash % total_workers;
                     uint16_t worker_thread_id = worker_thread_hash(hash) % SENTINEL_CONF->WORKERTHREAD_COUNT;
-                    next_tasks.push_back( std::tuple<JobId ,ThreadId , TaskId>(worker_index,worker_thread_id , childtask->id_));
+                    next_tasks.push_back( std::tuple<JobId ,ThreadId, ThreadId, TaskId>(worker_index,worker_thread_id ,worker_thread_id, childtask->id_));
                 }
                 resourced_lock.unlock();
                 break;

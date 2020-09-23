@@ -128,7 +128,11 @@ public:
         return pool_.size();
     }
 
-    std::shared_ptr<T> Get(int tid) {
+    Thread<T> &Get(int tid) {
+        return pool_[tid];
+    };
+
+    std::shared_ptr<T> GetObj(int tid) {
         return std::move(pool_[tid].GetObj());
     };
 

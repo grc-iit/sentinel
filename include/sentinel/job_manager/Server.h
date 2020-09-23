@@ -62,7 +62,7 @@ namespace sentinel::job_manager{
             std::function<bool(JobId)> functionTerminateJob(std::bind(&sentinel::job_manager::Server::TerminateJob, this, std::placeholders::_1));
             std::function<bool(WorkerManagerId,WorkerManagerStats&)> functionUpdateWorkerManagerStats(std::bind(&sentinel::job_manager::Server::UpdateWorkerManagerStats, this, std::placeholders::_1, std::placeholders::_2));
             std::function<std::pair<bool, WorkerManagerStats>(WorkerManagerId)> functionGetWorkerManagerStats(std::bind(&sentinel::job_manager::Server::GetWorkerManagerStats, this, std::placeholders::_1));
-            std::function<std::vector<std::tuple<JobId ,ThreadId , TaskId>>(JobId, TaskId, Event)> functionGetNextNode(std::bind(&sentinel::job_manager::Server::GetNextNode, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+            std::function<std::vector<std::tuple<JobId ,ThreadId ,ThreadId , TaskId>>(JobId, TaskId, Event)> functionGetNextNode(std::bind(&sentinel::job_manager::Server::GetNextNode, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
             std::function<bool(ResourceAllocation&)> functionChangeResourceAllocation(std::bind(&sentinel::job_manager::Server::ChangeResourceAllocation, this, std::placeholders::_1));
             rpc->bind("SubmitJob", functionSubmitJob);
             rpc->bind("TerminateJob", functionTerminateJob);
@@ -83,7 +83,7 @@ namespace sentinel::job_manager{
         bool TerminateJob(JobId jobId);
         bool UpdateWorkerManagerStats(WorkerManagerId workerManagerId, WorkerManagerStats &stats);
         std::pair<bool, WorkerManagerStats> GetWorkerManagerStats(WorkerManagerId workerManagerId);
-        std::vector<std::tuple<JobId ,ThreadId , TaskId>> GetNextNode(JobId job_id, TaskId currentTaskId, Event e);
+        std::vector<std::tuple<JobId ,ThreadId ,ThreadId, TaskId>> GetNextNode(JobId job_id, TaskId currentTaskId, Event e);
         bool ChangeResourceAllocation(ResourceAllocation &resourceAllocation);
     };
 }
