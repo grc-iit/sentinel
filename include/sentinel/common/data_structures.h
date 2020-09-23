@@ -158,12 +158,13 @@ public:
 
 
 typedef struct ResourceAllocation {
+    // TODO: modify num_nodes_ type from uint16_t to int16_t
     uint16_t job_id_;
-    uint16_t num_nodes_;
+    int16_t num_nodes_;
     uint16_t num_procs_per_node;
     uint16_t num_threads_per_proc;
 
-    ResourceAllocation(uint16_t job_id, uint16_t num_nodes, uint16_t num_procs_per_node, uint16_t num_threads_per_proc): job_id_(job_id),num_nodes_(num_nodes), num_procs_per_node(num_procs_per_node), num_threads_per_proc(num_threads_per_proc){}
+    ResourceAllocation(uint16_t job_id, int16_t num_nodes, uint16_t num_procs_per_node, uint16_t num_threads_per_proc): job_id_(job_id),num_nodes_(num_nodes), num_procs_per_node(num_procs_per_node), num_threads_per_proc(num_threads_per_proc){}
 
     /*Define the default, copy and move constructor*/
     ResourceAllocation(): job_id_(0),num_nodes_(0), num_procs_per_node(0), num_threads_per_proc(){}
@@ -296,7 +297,7 @@ namespace clmdep_msgpack {
             template<>
             struct convert<ResourceAllocation> {
                 mv1::object const &operator()(mv1::object const &o, ResourceAllocation &input) const {
-                    input.num_nodes_ = o.via.array.ptr[0].as<uint16_t>();
+                    input.num_nodes_ = o.via.array.ptr[0].as<int16_t>();
                     input.num_procs_per_node = o.via.array.ptr[1].as<uint16_t>();
                     input.num_threads_per_proc = o.via.array.ptr[2].as<uint16_t>();
                     return o;
