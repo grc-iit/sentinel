@@ -75,7 +75,7 @@ std::shared_ptr<sentinel::worker_manager::Worker> sentinel::worker_manager::Serv
             }
         }
     }else{
-        auto thread_id = worker_thread_id - 1 % pool_.MaxSize();
+        auto thread_id = (worker_thread_id - 1) % pool_.MaxSize();
         worker = std::move(pool_.Get(thread_id));
     }
     return std::move(worker);
