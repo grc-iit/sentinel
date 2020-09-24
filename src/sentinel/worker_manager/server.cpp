@@ -30,8 +30,9 @@ sentinel::worker_manager::Server::Server() : num_tasks_assigned_(0) {
     epoch_timer_.startTime();
     MPI_Comm_rank(MPI_COMM_WORLD, &rank_);
     Init();
+    int i=0;
     while(pool_.Size() < pool_.MaxSize()) {
-        pool_.Assign(this);
+        pool_.Assign(i,this, i++);
     }
 }
 
@@ -74,13 +75,15 @@ sentinel::worker_manager::Server::FindMinimumQueue(std::set<ThreadId> &threads) 
     }else{
         for(const auto& thread_id: threads){
             Thread<Worker> &thread = pool_.Get(thread_id);
-            if(thread.IsActive()) {
-                std::shared_ptr<Worker> temp = std::move(thread.GetObj());
-                if(temp->GetQueueDepth() < min_queue_size) {
-                    min_queue_size = temp->GetQueueDepth();
-                    worker = std::move(temp);
-                }
+            if(!thread.IsActive()) {
+                thread.Assign(this, thread_id);
             }
+            std::shared_ptr<Worker> temp = std::move(thread.GetObj());
+            if(temp->GetQueueDepth() < min_queue_size) {
+                min_queue_size = temp->GetQueueDepth();
+                worker = std::move(temp);
+            }
+
         }
     }
     return std::move(worker);
@@ -194,14 +197,18 @@ void sentinel::worker_manager::Worker::GetAndExecuteTask(std::future<void> loop_
     queue_.Pop(id);
 }
 
-void sentinel::worker_manager::Worker::Run(std::future<void> loop_cond,Server* server) {
+void sentinel::worker_manager::Worker::Run(std::future<void> loop_cond,Server* server, ThreadId id) {
     AUTO_TRACER("sentinel::worker_manager::Worker::Run");
+    std::promise<void> exitSignal;
+    std::future<void> futureObj = exitSignal.get_future();
     server_=server;
+    id_=id;
     do {
         while (queue_.Size() > 0) {
-            GetAndExecuteTask(std::move(loop_cond));
+            GetAndExecuteTask(std::move(futureObj));
         }
     } while(loop_cond.wait_for(std::chrono::milliseconds(thread_timeout_ms_)) == std::future_status::timeout);
+    exitSignal.set_value();
 }
 
 void sentinel::worker_manager::Worker::Enqueue(std::tuple<uint32_t,uint32_t,Event> id) {

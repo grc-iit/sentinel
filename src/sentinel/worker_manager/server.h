@@ -22,6 +22,7 @@ namespace sentinel::worker_manager {
         sentinel::Queue<std::tuple<uint32_t, uint32_t, Event>> queue_;
         uint32_t thread_timeout_ms_;
         Server* server_;
+        ThreadId id_;
 
     public:
         Worker();
@@ -34,7 +35,7 @@ namespace sentinel::worker_manager {
 
         bool EmitCallback(uint32_t job_id, uint32_t current_task_id, Event &output_event);
 
-        void Run(std::future<void> loop_cond,Server* server);
+        void Run(std::future<void> loop_cond,Server* server, ThreadId id);
 
         void Enqueue(std::tuple<uint32_t, uint32_t, Event> task_id);
 
@@ -61,6 +62,7 @@ namespace sentinel::worker_manager {
         int GetNumTasksQueued(void);
 
         common::Daemon<Server> *daemon;
+
     public:
         Server();
 

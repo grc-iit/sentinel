@@ -12,7 +12,7 @@ int main()
     sentinel::ThreadPool<sentinel::worker_manager::Worker> pool;
     pool.Init(tp_sz);
     for(int i = 0; i < tp_sz; ++i) {
-        pool.Assign(&worker_manager);
+        pool.Assign(i,&worker_manager,i);
     }
     for(int i = 0; i < tp_sz; ++i) {
         auto worker = pool.GetObj(i);

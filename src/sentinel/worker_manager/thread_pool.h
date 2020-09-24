@@ -11,6 +11,7 @@
 #include <future>
 #include <mutex>
 #include <functional>
+#include <sentinel/common/typedefs.h>
 
 namespace sentinel {
 template<class T> class Thread;
@@ -87,7 +88,7 @@ public:
     }
 
     template<typename ...Args>
-    int Assign(Args ...args) {
+    int Assign(int i, Args ...args) {
         if(Size() == pool_.size()) {
             throw 1; //TODO: Actual exception
         }

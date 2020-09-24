@@ -131,7 +131,6 @@ std::vector<std::tuple<JobId , std::set<ThreadId>, TaskId>> sentinel::job_manage
                 break;
             }
             case TaskType::KEYBY:{
-                AUTO_TRACER("job_manager::GetNextNode2::resources");
                 std::shared_lock resourced_lock(resources_mutex_);
                 auto iter = used_resources.find(job_id);
                 size_t total_workers = iter->second.size();
@@ -143,7 +142,6 @@ std::vector<std::tuple<JobId , std::set<ThreadId>, TaskId>> sentinel::job_manage
                     auto hash = atoi(hash_event.id_.c_str());
                     auto worker_index = hash % total_workers;
                     for(const auto& worker_resource:iter->second){
-
                         if(worker_index == worker_resource.id_){
                             auto num_threads = worker_resource.threads_.size();
                             uint16_t worker_thread_index = worker_thread_hash(hash) % num_threads;

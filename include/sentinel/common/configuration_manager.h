@@ -97,7 +97,7 @@ namespace sentinel {
         void ConfigureJobManagerServer() {
             LoadConfiguration();
             BASKET_CONF->RPC_THREADS = JOBMANAGER_RPC_THREADS;
-            BASKET_CONF->MEMORY_ALLOCATED = 1024ULL * 1024ULL * 1ULL;
+            BASKET_CONF->MEMORY_ALLOCATED = 1024ULL * 1024ULL * 1024ULL;
             BASKET_CONF->BACKED_FILE_DIR=JOBMANAGER_DIR;
             BASKET_CONF->ConfigureDefaultServer(JOBMANAGER_HOST_FILE.c_str());
             JOBMANAGER_COUNT = BASKET_CONF->NUM_SERVERS;
@@ -114,7 +114,7 @@ namespace sentinel {
         void ConfigureWorkermanagerServer() {
             LoadConfiguration();
             BASKET_CONF->RPC_THREADS = WORKERMANAGER_RPC_THREADS;
-            BASKET_CONF->MEMORY_ALLOCATED = 1024ULL * 1024ULL * 1ULL;
+            BASKET_CONF->MEMORY_ALLOCATED = 1024ULL * 1024ULL * 1024ULL;
             BASKET_CONF->BACKED_FILE_DIR=WORKERMANAGER_DIR;
             BASKET_CONF->ConfigureDefaultServer(WORKERMANAGER_HOST_FILE.c_str());
             WORKERMANAGER_COUNT = BASKET_CONF->NUM_SERVERS;
