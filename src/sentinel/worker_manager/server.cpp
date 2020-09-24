@@ -126,7 +126,7 @@ bool sentinel::worker_manager::Server::AssignTask(uint16_t worker_tid_min, uint1
     AUTO_TRACER("sentinel::worker_manager::Server::AssignTask", task_id);
 
     //Enqueue work in existing thread
-    std::shared_ptr<Worker> thread = FindMinimumQueue(worker_tid_min, worker_tid_count);
+    std::shared_ptr<Worker> thread = FindMinimumQueue(worker_tid_min, worker_tid_count - worker_tid_min);
     thread->Enqueue(std::tuple<uint32_t,uint32_t,Event>(job_id,task_id,event));
     ++num_tasks_assigned_;
 

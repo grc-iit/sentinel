@@ -30,9 +30,9 @@ std::pair<bool, WorkerManagerStats> sentinel::job_manager::client::GetWorkerMana
     return rpc->call<RPCLIB_MSGPACK::object_handle>(server, "GetWorkerManagerStats", workerManagerId).as<std::pair<bool, WorkerManagerStats>>();
 }
 
-std::vector<std::tuple<uint32_t, uint16_t, uint16_t, uint32_t>> sentinel::job_manager::client::GetNextNode(uint32_t job_id, uint32_t currentTaskId, Event event) {
+std::vector<std::tuple<JobId , ThreadId, ThreadId, TaskId>> sentinel::job_manager::client::GetNextNode(JobId job_id, TaskId currentTaskId, Event &event) {
     int server = 0;
-    return rpc->call<RPCLIB_MSGPACK::object_handle>(server, "GetNextNode", job_id, currentTaskId, event).as<std::vector<std::tuple<uint32_t, uint16_t, uint16_t, uint32_t>>>();
+    return rpc->call<RPCLIB_MSGPACK::object_handle>(server, "GetNextNode", job_id, currentTaskId, event).as<std::vector<std::tuple<JobId , ThreadId, ThreadId, TaskId>>>();
 }
 
 bool sentinel::job_manager::client::ChangeResourceAllocation(ResourceAllocation &resourceAllocation) {

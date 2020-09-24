@@ -10,6 +10,7 @@
 #include <basket/communication/rpc_factory.h>
 #include <sentinel/common/data_structures.h>
 #include <sentinel/common/configuration_manager.h>
+#include <sentinel/common/typedefs.h>
 #include <common/debug.h>
 #include <rpc/client.h>
 
@@ -28,7 +29,7 @@ namespace sentinel::job_manager {
 
         std::pair<bool, WorkerManagerStats> GetWorkerManagerStats(uint32_t workerManagerId);
 
-        std::vector<std::tuple<uint32_t, uint16_t, uint16_t, uint32_t>> GetNextNode(uint32_t job_id, uint32_t currentTaskId, Event event);
+        std::vector<std::tuple<JobId , ThreadId, ThreadId, TaskId>> GetNextNode(JobId job_id, TaskId currentTaskId, Event &event);
 
         bool ChangeResourceAllocation(ResourceAllocation &resourceAllocation);
 

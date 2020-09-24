@@ -16,5 +16,14 @@ enum class TaskType{
     SINK=1,
     KEYBY=2
 };
+
 MSGPACK_ADD_ENUM(TaskType);
+
+enum class TaskStatus{
+    NONE=0,
+    QUEUED=1,
+    IN_PROGRESS=2,
+    DONE=3
+};
+MSGPACK_ADD_ENUM(TaskStatus);
 #endif //SENTINEL_COMMON_ENUMERATIONS_H

@@ -13,7 +13,7 @@ void sentinel::job_manager::Server::RunInternal(std::future<void> futureObj) {
 }
 
 bool sentinel::job_manager::Server::SubmitJob(JobId jobId, TaskId num_sources){
-    AUTO_TRACER("sentinel::job_manager::Server::SubmitJob ", used_resources.find(jobId)->first, used_resources.find(jobId)->second.data());
+    AUTO_TRACER("sentinel::job_manager::Server::SubmitJob ", jobId, num_sources);
     auto classLoader = ClassLoader();
     std::shared_ptr<Job<Event>> job = classLoader.LoadClass<Job<Event>>(jobId);
     std::unique_lock job_lock(job_mutex_);
@@ -73,10 +73,10 @@ bool sentinel::job_manager::Server::TerminateJob(JobId jobId){
     if (possible_job == used_resources.end()) return false;
     auto workermanagers_used = used_resources.at(jobId);
     resource_lock.unlock();
-    for(auto workermanager_used : workermanagers_used){
-        auto worker_index = std::get<0>(workermanager_used);
-        auto start_thread = std::get<1>(workermanager_used);
-        auto end_thread = std::get<2>(workermanager_used);
+    for(const auto& worker_manager_used: workermanagers_used){
+        auto worker_index = std::get<0>(worker_manager_used);
+        auto start_thread = std::get<1>(worker_manager_used);
+        auto end_thread = std::get<2>(worker_manager_used);
         /**
          * TODO: fixme for all edge cases.
          */
@@ -119,11 +119,11 @@ std::pair<bool, WorkerManagerStats> sentinel::job_manager::Server::GetWorkerMana
 }
 
 
-std::vector<std::tuple<JobId , ThreadId, ThreadId, TaskId>> sentinel::job_manager::Server::GetNextNode(JobId job_id, TaskId currentTaskId, Event event){
+std::vector<std::tuple<JobId , ThreadId, ThreadId, TaskId>> sentinel::job_manager::Server::GetNextNode(JobId job_id, TaskId currentTaskId, Event &event){
     AUTO_TRACER("job_manager::GetNextNode::resources", job_id, currentTaskId);
     auto newTasks = jobs.at(job_id)->GetTask(currentTaskId)->links;
     auto next_tasks = std::vector<std::tuple<JobId , ThreadId, ThreadId, TaskId>>();
-    for(auto task:newTasks){
+    for(const auto& task:newTasks){
         switch(task->type_){
             case TaskType::SOURCE:{
                 break;
@@ -134,14 +134,20 @@ std::vector<std::tuple<JobId , ThreadId, ThreadId, TaskId>> sentinel::job_manage
                 auto iter = used_resources.find(job_id);
                 size_t total_workers = iter->second.size();
                 std::hash<size_t> worker_thread_hash;
-                for(auto childtask:task->links){
+                for(const auto& child_task:task->links){
                     auto child_event=event;
-                    child_event.id_ += std::to_string(childtask->id_);
+                    child_event.id_ += std::to_string(child_task->id_);
                     auto hash_event = task->Execute(event);
                     auto hash = atoi(hash_event.id_.c_str());
                     auto worker_index = hash % total_workers;
-                    uint16_t worker_thread_id = worker_thread_hash(hash) % SENTINEL_CONF->WORKERTHREAD_COUNT;
-                    next_tasks.push_back( std::tuple<JobId ,ThreadId, ThreadId, TaskId>(worker_index,worker_thread_id ,worker_thread_id, childtask->id_));
+                    for(const auto& worker_tuple:iter->second){
+                        if(worker_index == std::get<0>(worker_tuple)){
+                            uint16_t worker_thread_id = worker_thread_hash(hash) % (std::get<2>(worker_tuple) - std::get<1>(worker_tuple)) + std::get<1>(worker_tuple) + 1;
+                            next_tasks.emplace_back(worker_index, worker_thread_id , worker_thread_id, child_task->id_);
+                            break;
+                        }
+                    }
+
                 }
                 resourced_lock.unlock();
                 break;
@@ -150,7 +156,16 @@ std::vector<std::tuple<JobId , ThreadId, ThreadId, TaskId>> sentinel::job_manage
                 std::shared_lock load_lock(load_mutex_);
                 WorkerManagerId newWorkermanager = reversed_loadMap.begin()->second;
                 load_lock.unlock();
-                next_tasks.push_back(std::tuple<JobId ,ThreadId , TaskId>(newWorkermanager, 0, task->id_));
+                std::shared_lock resourced_lock(resources_mutex_);
+                auto iter = used_resources.find(job_id);
+                for(const auto& worker_tuple:iter->second){
+                    if(newWorkermanager == std::get<0>(worker_tuple)){
+                        next_tasks.emplace_back(newWorkermanager, std::get<1>(worker_tuple), std::get<2>(worker_tuple) , task->id_);
+                        break;
+                    }
+                }
+                resourced_lock.unlock();
+
                 break;
             }
         }
@@ -208,7 +223,7 @@ bool sentinel::job_manager::Server::SpawnWorkerManagers(ThreadId required_thread
     resourced_lock.unlock();
     if(new_worker_spawn.size() > 0){
         MPI_Info_set(info,"host", hosts.data());
-        MPI_Comm workerManagerComm;
+        MPI_Comm workerManagerComm=MPI_Comm();
         int errcodes[new_worker_spawn.size()];
         MPI_Comm_spawn(cmd, mpi_argv, new_worker_spawn.size(), info, 0, MPI_COMM_WORLD, &workerManagerComm, errcodes );
         for(int i=0; i < new_worker_spawn.size(); i++){
@@ -229,8 +244,7 @@ bool sentinel::job_manager::Server::TerminateWorkerManagers(ResourceAllocation &
 
         std::unique_lock resourced_lock(resources_mutex_);
         available_workermanagers.insert_or_assign(workermanager_killed, std::pair<CharStruct,uint32_t>(SENTINEL_CONF->WORKERMANAGER_LISTS[workermanager_killed],0));
-        auto list_workmanagers = used_resources.at(resourceAllocation.job_id_);
-        list_workmanagers.erase(std::remove(list_workmanagers.begin(), list_workmanagers.end(), workermanager_killed), list_workmanagers.end());
+        used_resources.erase(resourceAllocation.job_id_);
         resourced_lock.unlock();
         if(!workermanager_client->FinalizeWorkerManager(workermanager_killed)) throw ErrorException(TERMINATE_WORKERMANAGER_FAILED);;
     }
