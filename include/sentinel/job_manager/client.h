@@ -29,7 +29,7 @@ namespace sentinel::job_manager {
 
         std::pair<bool, WorkerManagerStats> GetWorkerManagerStats(uint32_t workerManagerId);
 
-        std::vector<std::tuple<JobId , ThreadId, ThreadId, TaskId>> GetNextNode(JobId job_id, TaskId currentTaskId, Event &event);
+        std::vector<std::tuple<JobId , std::set<ThreadId>, TaskId>> GetNextNode(JobId job_id, TaskId currentTaskId, Event &event);
 
         bool ChangeResourceAllocation(ResourceAllocation &resourceAllocation);
 

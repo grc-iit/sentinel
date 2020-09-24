@@ -14,6 +14,7 @@
 #include <common/data_structure.h>
 #include <sentinel/common/enumerations.h>
 #include <vector>
+#include "typedefs.h"
 
 typedef struct Event: public Data{
 
@@ -55,7 +56,10 @@ public:
     E Execute(E &event){
         return ExecuteInternal(event);
     }
-
+    bool EndLoop(std::future<void> loop_cond){
+        loop_cond_=std::move(loop_cond);
+        return true;
+    }
     bool EmitCallback(std::function<bool(uint32_t, uint32_t, Event &)> &func){
         emit=std::move(func);
         return true;
@@ -65,6 +69,7 @@ protected:
         return event;
     }
     std::function<bool(uint32_t, uint32_t, Event &)> emit;
+    std::future<void> loop_cond_;
 
 };
 template<typename E, typename std::enable_if<std::is_base_of<Event, E>::value>::type * = nullptr>
@@ -204,6 +209,19 @@ typedef struct WorkerManagerStats {
         return (num_tasks_queued_ < other.num_tasks_queued_);
     }
 } WorkerManagerStats;
+
+typedef struct WorkerManagerResource{
+    WorkerManagerId id_;
+    CharStruct node_name_;
+    std::set<ThreadId> threads_;
+    WorkerManagerResource():id_(),node_name_(),threads_(){}
+    WorkerManagerResource(const WorkerManagerResource &other):id_(other.id_), node_name_(other.node_name_), threads_(other.threads_) {}
+    WorkerManagerResource(WorkerManagerResource &&other):id_(other.id_),  node_name_(other.node_name_), threads_(other.threads_){}
+    /*Define Assignment Operator*/
+    WorkerManagerResource &operator=(const WorkerManagerResource &other)= default;
+
+} WorkerManagerResource;
+
 namespace clmdep_msgpack {
     MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
         namespace mv1 = clmdep_msgpack::v1;

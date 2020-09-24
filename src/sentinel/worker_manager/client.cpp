@@ -15,12 +15,9 @@ void sentinel::worker_manager::Client::Init() {
 
 bool sentinel::worker_manager::Client::AssignTask(
         int server_index,
-        uint32_t worker_tid_min, uint32_t worker_tid_count,
+        std::set<ThreadId> threads,
         uint32_t job_id, uint32_t task_id, Event &event) {
-    auto check = server_rpc->call<RPCLIB_MSGPACK::object_handle>(
-            server_index, "AssignTask",
-            worker_tid_min, worker_tid_count,
-            job_id, task_id, event).as<bool>();
+    auto check = server_rpc->call<RPCLIB_MSGPACK::object_handle>( server_index, "AssignTask", threads, job_id, task_id, event).as<bool>();
     return check;
 }
 

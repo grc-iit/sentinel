@@ -38,9 +38,9 @@ namespace sentinel::job_manager{
         std::map<WorkerManagerStats, WorkerManagerId> reversed_loadMap;
 
         // Maintains available resources per worker manager instance
-        std::unordered_map<WorkerManagerId, std::pair<NodeName,ThreadId>> available_workermanagers;
+        std::unordered_map<WorkerManagerId, WorkerManagerResource> available_workermanagers;
         // Maintains resources allocated per job
-        std::unordered_map<JobId, std::vector<std::tuple<WorkerManagerId,StartThreadId,EndThreadId>>> used_resources;
+        std::unordered_map<JobId, std::vector<WorkerManagerResource>> used_resources;
         // Maintains loaded job per id
         std::unordered_map<JobId, std::shared_ptr<Job<Event>>> jobs;
 
@@ -61,7 +61,7 @@ namespace sentinel::job_manager{
             std::function<bool(JobId)> functionTerminateJob(std::bind(&sentinel::job_manager::Server::TerminateJob, this, std::placeholders::_1));
             std::function<bool(WorkerManagerId,WorkerManagerStats&)> functionUpdateWorkerManagerStats(std::bind(&sentinel::job_manager::Server::UpdateWorkerManagerStats, this, std::placeholders::_1, std::placeholders::_2));
             std::function<std::pair<bool, WorkerManagerStats>(WorkerManagerId)> functionGetWorkerManagerStats(std::bind(&sentinel::job_manager::Server::GetWorkerManagerStats, this, std::placeholders::_1));
-            std::function<std::vector<std::tuple<JobId ,ThreadId ,ThreadId , TaskId>>(JobId, TaskId, Event&)> functionGetNextNode(std::bind(&sentinel::job_manager::Server::GetNextNode, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+            std::function<std::vector<std::tuple<JobId , std::set<ThreadId>, TaskId>>(JobId, TaskId, Event&)> functionGetNextNode(std::bind(&sentinel::job_manager::Server::GetNextNode, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
             std::function<bool(ResourceAllocation&)> functionChangeResourceAllocation(std::bind(&sentinel::job_manager::Server::ChangeResourceAllocation, this, std::placeholders::_1));
             rpc->bind("SubmitJob", functionSubmitJob);
             rpc->bind("TerminateJob", functionTerminateJob);
@@ -74,7 +74,12 @@ namespace sentinel::job_manager{
 
             int i = 0;
             for(auto&& node: SENTINEL_CONF->WORKERMANAGER_LISTS){
-                available_workermanagers.insert({i, {node,SENTINEL_CONF->WORKERTHREAD_COUNT}});
+                WorkerManagerResource resource;
+                resource.id_=i;
+                resource.node_name_=node;
+                for(int i=0;i<SENTINEL_CONF->WORKERTHREAD_COUNT;++i)
+                    resource.threads_.insert(i);
+                available_workermanagers.insert({i, resource});
                 i++;
             }
         }
@@ -82,7 +87,7 @@ namespace sentinel::job_manager{
         bool TerminateJob(JobId jobId);
         bool UpdateWorkerManagerStats(WorkerManagerId workerManagerId, WorkerManagerStats &stats);
         std::pair<bool, WorkerManagerStats> GetWorkerManagerStats(WorkerManagerId workerManagerId);
-        std::vector<std::tuple<JobId ,ThreadId ,ThreadId, TaskId>> GetNextNode(JobId job_id, TaskId currentTaskId, Event &event);
+        std::vector<std::tuple<JobId , std::set<ThreadId>, TaskId>> GetNextNode(JobId job_id, TaskId currentTaskId, Event &event);
         bool ChangeResourceAllocation(ResourceAllocation &resourceAllocation);
     };
 }

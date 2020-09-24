@@ -23,7 +23,7 @@ bool sentinel::job_manager::Server::SubmitJob(JobId jobId, TaskId num_sources){
     ResourceAllocation defaultResourceAllocation = SENTINEL_CONF->DEFAULT_RESOURCE_ALLOCATION;
     defaultResourceAllocation.job_id_ = jobId;
 
-    auto vect = std::vector<std::tuple<WorkerManagerId ,StartThreadId ,EndThreadId>>();
+    auto vect = std::vector<WorkerManagerResource>();
     std::unique_lock resource_lock(resources_mutex_);
     used_resources.insert(std::make_pair(jobId, vect));
     resource_lock.unlock();
@@ -39,28 +39,24 @@ bool sentinel::job_manager::Server::SubmitJob(JobId jobId, TaskId num_sources){
     std::shared_lock resource_lock_shared(job_mutex_);
     auto workers = used_resources.at(jobId);
     resource_lock_shared.unlock();
-
-    auto current_worker_thread = std::get<1>(workers[0]);
+    auto current_worker_thread = workers[current_worker_index].threads_.begin();
     for(int i=0;i<num_sources;i++){
-        auto end_thread = std::get<2>(workers[current_worker_index]);
         WorkerManagerId workermanager = current_worker_index;
+
         Event event;
         event.id_ = std::to_string(i);
-        /*
-         * TODO: Send used resources to workermanager.
-         * For the specific job, for the specific workermanager send the range
-         */
-        workermanager_client->AssignTask(workermanager,0,0,jobId, collector->id_,event);
+
+        workermanager_client->AssignTask(workermanager, workers[current_worker_index].threads_, jobId, collector->id_,event);
         //Lets ensure that load map is not empty
         WorkerManagerStats wms = WorkerManagerStats();
         UpdateWorkerManagerStats(workermanager, wms);
         current_worker_thread++;
-        if(current_worker_thread == end_thread){
+        if(current_worker_thread == workers[current_worker_index].threads_.end()){
             current_worker_index++;
             if(workers.size() == current_worker_index && i != num_sources){
                 //TODO: throw error.
                 break;
-            }else current_worker_thread = std::get<1>(workers[current_worker_index]);
+            }else current_worker_thread = workers[current_worker_index].threads_.begin();
         }
     }
     std::cout << "job Spawned" <<std::endl;
@@ -74,21 +70,27 @@ bool sentinel::job_manager::Server::TerminateJob(JobId jobId){
     auto workermanagers_used = used_resources.at(jobId);
     resource_lock.unlock();
     for(const auto& worker_manager_used: workermanagers_used){
-        auto worker_index = std::get<0>(worker_manager_used);
-        auto start_thread = std::get<1>(worker_manager_used);
-        auto end_thread = std::get<2>(worker_manager_used);
-        /**
-         * TODO: fixme for all edge cases.
-         */
-        if(start_thread == 0 && end_thread == SENTINEL_CONF->WORKERTHREAD_COUNT - 1){
+        std::unique_lock resource_lock_ex(resources_mutex_);
+        auto iter = available_workermanagers.find(worker_manager_used.id_);
+        if(available_workermanagers.end() == iter){
+            WorkerManagerResource resource;
+            resource.id_=worker_manager_used.id_;
+            resource.node_name_=worker_manager_used.node_name_;
+            available_workermanagers.insert({worker_manager_used.id_,resource});
+        }
+        iter = available_workermanagers.find(worker_manager_used.id_);
+        for(auto thread:worker_manager_used.threads_){
+            iter->second.threads_.emplace(thread);
+        }
+        auto num_thread_avail = iter->second.threads_.size();
+        resource_lock_ex.unlock();
+        if(num_thread_avail == SENTINEL_CONF->WORKERTHREAD_COUNT){
             std::unique_lock load_lock(load_mutex_);
-            WorkerManagerStats reverse_lookup = loadMap.at(worker_index);
-            loadMap.erase(worker_index);
+            WorkerManagerStats reverse_lookup = loadMap.at(worker_manager_used.id_);
+            loadMap.erase(worker_manager_used.id_);
             reversed_loadMap.erase(reverse_lookup);
-            available_workermanagers.erase(worker_index);
-            available_workermanagers.insert({worker_index, {SENTINEL_CONF->WORKERMANAGER_LISTS[worker_index],SENTINEL_CONF->WORKERTHREAD_COUNT}});
             load_lock.unlock();
-            workermanager_client->FinalizeWorkerManager(worker_index);
+            workermanager_client->FinalizeWorkerManager(worker_manager_used.id_);
         }
     }
     std::unique_lock resource_lock_ex(resources_mutex_);
@@ -119,10 +121,10 @@ std::pair<bool, WorkerManagerStats> sentinel::job_manager::Server::GetWorkerMana
 }
 
 
-std::vector<std::tuple<JobId , ThreadId, ThreadId, TaskId>> sentinel::job_manager::Server::GetNextNode(JobId job_id, TaskId currentTaskId, Event &event){
+std::vector<std::tuple<JobId , std::set<ThreadId>, TaskId>> sentinel::job_manager::Server::GetNextNode(JobId job_id, TaskId currentTaskId, Event &event){
     AUTO_TRACER("job_manager::GetNextNode::resources", job_id, currentTaskId);
     auto newTasks = jobs.at(job_id)->GetTask(currentTaskId)->links;
-    auto next_tasks = std::vector<std::tuple<JobId , ThreadId, ThreadId, TaskId>>();
+    auto next_tasks = std::vector<std::tuple<JobId , std::set<ThreadId>, TaskId>>();
     for(const auto& task:newTasks){
         switch(task->type_){
             case TaskType::SOURCE:{
@@ -140,10 +142,17 @@ std::vector<std::tuple<JobId , ThreadId, ThreadId, TaskId>> sentinel::job_manage
                     auto hash_event = task->Execute(event);
                     auto hash = atoi(hash_event.id_.c_str());
                     auto worker_index = hash % total_workers;
-                    for(const auto& worker_tuple:iter->second){
-                        if(worker_index == std::get<0>(worker_tuple)){
-                            uint16_t worker_thread_id = worker_thread_hash(hash) % (std::get<2>(worker_tuple) - std::get<1>(worker_tuple)) + std::get<1>(worker_tuple) + 1;
-                            next_tasks.emplace_back(worker_index, worker_thread_id , worker_thread_id, child_task->id_);
+                    for(const auto& worker_resource:iter->second){
+
+                        if(worker_index == worker_resource.id_){
+                            auto num_threads = worker_resource.threads_.size();
+                            uint16_t worker_thread_index = worker_thread_hash(hash) % num_threads;
+                            auto iter = worker_resource.threads_.begin();
+                            std::advance(iter, worker_thread_index);
+                            uint16_t worker_thread_id = *iter;
+                            auto selected_threads = std::set<ThreadId>();
+                            selected_threads.emplace(worker_thread_id);
+                            next_tasks.emplace_back(worker_index, selected_threads, child_task->id_);
                             break;
                         }
                     }
@@ -158,9 +167,9 @@ std::vector<std::tuple<JobId , ThreadId, ThreadId, TaskId>> sentinel::job_manage
                 load_lock.unlock();
                 std::shared_lock resourced_lock(resources_mutex_);
                 auto iter = used_resources.find(job_id);
-                for(const auto& worker_tuple:iter->second){
-                    if(newWorkermanager == std::get<0>(worker_tuple)){
-                        next_tasks.emplace_back(newWorkermanager, std::get<1>(worker_tuple), std::get<2>(worker_tuple) , task->id_);
+                for(const auto& worker_resource:iter->second){
+                    if(newWorkermanager == worker_resource.id_){
+                        next_tasks.emplace_back(newWorkermanager, worker_resource.threads_ , task->id_);
                         break;
                     }
                 }
@@ -200,23 +209,41 @@ bool sentinel::job_manager::Server::SpawnWorkerManagers(ThreadId required_thread
     auto new_worker_spawn = std::vector<uint32_t>();
     while(left_threads > 0){
         auto worker_index = available_worker_iter->first;
-        auto host = available_worker_iter->second.first;
-        auto start_thread = SENTINEL_CONF->WORKERTHREAD_COUNT - available_worker_iter->second.second;
+        auto host = available_worker_iter->second.node_name_;
+        ThreadId start_thread = *available_worker_iter->second.threads_.begin();
         if(start_thread == 0){
             new_worker_spawn.push_back(worker_index);
             hosts += "," + host.string();
         }
-        auto can_use_threads = available_worker_iter->second.second < left_threads ? available_worker_iter->second.second : left_threads;
+        auto can_use_threads = available_worker_iter->second.threads_.size() < left_threads ? available_worker_iter->second.threads_.size() : left_threads;
 
         auto end_thread = start_thread + can_use_threads - 1;
-        auto left_thread_in_worker = available_worker_iter->second.second - can_use_threads;
-        available_workermanagers.erase(available_worker_iter);
-        if(left_thread_in_worker > 0){
-            available_workermanagers.insert({worker_index,{host,left_thread_in_worker}});
+        auto left_thread_in_worker = available_worker_iter->second.threads_.size() - can_use_threads;
+        auto used_threads = std::set<ThreadId>();
+        if(left_thread_in_worker == 0){
+            used_threads = available_worker_iter->second.threads_;
+            available_workermanagers.erase(available_worker_iter);
+        }else{
+            auto current = available_worker_iter->second.threads_.begin();
+            auto remove_threads = 0;
+            while(can_use_threads != remove_threads && current != available_worker_iter->second.threads_.end()){
+                used_threads.insert(*current);
+                current++;
+                remove_threads++;
+            }
+            current = available_worker_iter->second.threads_.begin();
+            for(auto thread:used_threads)
+                available_worker_iter->second.threads_.erase(thread);
         }
         auto used_resources_iter = used_resources.find(job_id);
-        if(used_resources_iter != used_resources.end())
-            used_resources_iter->second.emplace_back(std::tuple<WorkerManagerId ,StartThreadId ,EndThreadId>(worker_index,start_thread,end_thread));
+        if(used_resources_iter != used_resources.end()){
+            WorkerManagerResource resource;
+            resource.id_=worker_index;
+            resource.node_name_=host;
+            resource.threads_=used_threads;
+            used_resources_iter->second.emplace_back(resource);
+        }
+
         left_threads -= can_use_threads;
 
     }
@@ -241,9 +268,13 @@ bool sentinel::job_manager::Server::TerminateWorkerManagers(ResourceAllocation &
         reversed_loadMap.erase(reversed_loadMap.begin());
         loadMap.erase(workermanager_killed);
         load_lock.unlock();
-
         std::unique_lock resourced_lock(resources_mutex_);
-        available_workermanagers.insert_or_assign(workermanager_killed, std::pair<CharStruct,uint32_t>(SENTINEL_CONF->WORKERMANAGER_LISTS[workermanager_killed],0));
+        WorkerManagerResource resource;
+        resource.id_=i;
+        resource.node_name_=SENTINEL_CONF->WORKERMANAGER_LISTS[workermanager_killed];
+        for(int i=0;i<SENTINEL_CONF->WORKERTHREAD_COUNT;++i)
+            resource.threads_.insert(i);
+        available_workermanagers.insert({workermanager_killed, resource});
         used_resources.erase(resourceAllocation.job_id_);
         resourced_lock.unlock();
         if(!workermanager_client->FinalizeWorkerManager(workermanager_killed)) throw ErrorException(TERMINATE_WORKERMANAGER_FAILED);;

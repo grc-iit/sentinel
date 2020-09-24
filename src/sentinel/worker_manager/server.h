@@ -28,9 +28,9 @@ namespace sentinel::worker_manager {
 
         std::tuple<uint32_t, uint32_t, Event> GetTask();
 
-        void GetAndExecuteTask();
+        void GetAndExecuteTask(std::future<void> loop_cond);
 
-        void ExecuteTask(std::tuple<uint32_t, uint32_t, Event> task_id);
+        void ExecuteTask(std::tuple<uint32_t, uint32_t, Event> task_id, std::future<void> loop_cond);
 
         bool EmitCallback(uint32_t job_id, uint32_t current_task_id, Event &output_event);
 
@@ -56,7 +56,7 @@ namespace sentinel::worker_manager {
 
         bool UpdateJobManager();
 
-        std::shared_ptr<sentinel::worker_manager::Worker> FindMinimumQueue(uint16_t worker_tid_min, uint16_t worker_tid_count);
+        std::shared_ptr<sentinel::worker_manager::Worker> FindMinimumQueue(std::set<ThreadId> &threads);
 
         int GetNumTasksQueued(void);
 
@@ -68,7 +68,7 @@ namespace sentinel::worker_manager {
 
         void Run(std::future<void> loop_cond, common::Daemon<Server> *obj);
 
-        bool AssignTask(uint16_t worker_tid_min, uint16_t worker_tid_count, uint32_t job_id, uint32_t task_id, Event &event);
+        bool AssignTask(std::set<ThreadId> threads, uint32_t job_id, uint32_t task_id, Event &event);
 
         bool FinalizeWorkerManager();
     };
