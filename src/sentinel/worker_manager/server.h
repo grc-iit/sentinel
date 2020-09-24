@@ -22,10 +22,10 @@ namespace sentinel::worker_manager {
         sentinel::Queue<std::tuple<uint32_t, uint32_t, Event>> queue_;
         uint32_t thread_timeout_ms_;
         Server* server_;
-        ThreadId id_;
 
     public:
         Worker();
+        ThreadId id_;
 
         std::tuple<uint32_t, uint32_t, Event> GetTask();
 
@@ -70,7 +70,7 @@ namespace sentinel::worker_manager {
 
         void Run(std::future<void> loop_cond, common::Daemon<Server> *obj);
 
-        bool AssignTask(std::set<ThreadId> threads, uint32_t job_id, uint32_t task_id, Event &event);
+        ThreadId AssignTask(std::set<ThreadId> threads, uint32_t job_id, uint32_t task_id, Event &event);
 
         bool FinalizeWorkerManager();
     };

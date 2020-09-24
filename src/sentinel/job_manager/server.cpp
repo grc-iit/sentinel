@@ -37,26 +37,31 @@ bool sentinel::job_manager::Server::SubmitJob(JobId jobId, TaskId num_sources){
     auto current_worker_index = 0;
 
     std::shared_lock resource_lock_shared(job_mutex_);
-    auto workers = used_resources.at(jobId);
+    auto workers = used_resources.find(jobId);
     resource_lock_shared.unlock();
-    auto current_worker_thread = workers[current_worker_index].threads_.begin();
+    auto current_worker_thread = workers->second[current_worker_index].threads_.begin();
     for(int i=0;i<num_sources;i++){
         WorkerManagerId workermanager = current_worker_index;
 
         Event event;
         event.id_ = std::to_string(i);
-
-        workermanager_client->AssignTask(workermanager, workers[current_worker_index].threads_, jobId, collector->id_,event);
+        auto available_threads = std::set<ThreadId>();
+        for(const auto& thread:workers->second[current_worker_index].threads_){
+            auto iter =  workers->second[current_worker_index].excluded_threads_.find(thread);
+            if(iter == workers->second[current_worker_index].excluded_threads_.end()) available_threads.emplace(thread);
+        }
+        auto assigned_thread_id = workermanager_client->AssignTask(workermanager, available_threads, jobId, collector->id_,event);
+        workers->second[current_worker_index].excluded_threads_.emplace(assigned_thread_id);
         //Lets ensure that load map is not empty
         WorkerManagerStats wms = WorkerManagerStats();
         UpdateWorkerManagerStats(workermanager, wms);
         current_worker_thread++;
-        if(current_worker_thread == workers[current_worker_index].threads_.end()){
+        if(current_worker_thread == workers->second[current_worker_index].threads_.end()){
             current_worker_index++;
-            if(workers.size() == current_worker_index && i != num_sources){
+            if(workers->second.size() == current_worker_index && i != num_sources){
                 //TODO: throw error.
                 break;
-            }else current_worker_thread = workers[current_worker_index].threads_.begin();
+            }else current_worker_thread = workers->second[current_worker_index].threads_.begin();
         }
     }
 }
@@ -142,9 +147,14 @@ std::vector<std::tuple<JobId , std::set<ThreadId>, TaskId>> sentinel::job_manage
                     auto worker_index = hash % total_workers;
                     for(const auto& worker_resource:iter->second){
                         if(worker_index == worker_resource.id_){
-                            auto num_threads = worker_resource.threads_.size();
+                            auto available_threads = std::set<ThreadId>();
+                            for(const auto& thread:worker_resource.threads_){
+                                auto iter =  worker_resource.excluded_threads_.find(thread);
+                                if(iter == worker_resource.excluded_threads_.end()) available_threads.emplace(thread);
+                            }
+                            auto num_threads = available_threads.size();
                             uint16_t worker_thread_index = worker_thread_hash(hash) % num_threads;
-                            auto iter = worker_resource.threads_.begin();
+                            auto iter = available_threads.begin();
                             std::advance(iter, worker_thread_index);
                             uint16_t worker_thread_id = *iter;
                             auto selected_threads = std::set<ThreadId>();
@@ -166,7 +176,13 @@ std::vector<std::tuple<JobId , std::set<ThreadId>, TaskId>> sentinel::job_manage
                 auto iter = used_resources.find(job_id);
                 for(const auto& worker_resource:iter->second){
                     if(newWorkermanager == worker_resource.id_){
-                        next_tasks.emplace_back(newWorkermanager, worker_resource.threads_ , task->id_);
+                        auto available_threads = std::set<ThreadId>();
+                        for(const auto& thread:worker_resource.threads_){
+                            auto iter =  worker_resource.excluded_threads_.find(thread);
+                            if(iter == worker_resource.excluded_threads_.end()) available_threads.emplace(thread);
+                        }
+
+                        next_tasks.emplace_back(newWorkermanager, available_threads , task->id_);
                         break;
                     }
                 }

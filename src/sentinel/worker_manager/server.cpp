@@ -41,7 +41,7 @@ void sentinel::worker_manager::Server::Init() {
     SENTINEL_CONF->ConfigureWorkermanagerServer();
     client_rpc_ = basket::Singleton<RPCFactory>::GetInstance()->GetRPC(BASKET_CONF->RPC_PORT);
 
-    std::function<bool(std::set<ThreadId> threads,uint32_t,uint32_t,Event &)> functionAssignTask(std::bind(
+    std::function<ThreadId(std::set<ThreadId> threads,uint32_t,uint32_t,Event &)> functionAssignTask(std::bind(
             &sentinel::worker_manager::Server::AssignTask,
             this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
     client_rpc_->bind("AssignTask", functionAssignTask);
@@ -83,7 +83,6 @@ sentinel::worker_manager::Server::FindMinimumQueue(std::set<ThreadId> &threads) 
                 min_queue_size = temp->GetQueueDepth();
                 worker = std::move(temp);
             }
-
         }
     }
     return std::move(worker);
@@ -128,9 +127,8 @@ bool sentinel::worker_manager::Server::UpdateJobManager() {
     return check;
 }
 
-bool sentinel::worker_manager::Server::AssignTask(std::set<ThreadId> threads, uint32_t job_id, uint32_t task_id, Event &event) {
+ThreadId sentinel::worker_manager::Server::AssignTask(std::set<ThreadId> threads, JobId job_id, TaskId task_id, Event &event) {
     AUTO_TRACER("sentinel::worker_manager::Server::AssignTask", task_id);
-
     //Enqueue work in existing thread
     std::shared_ptr<Worker> thread = FindMinimumQueue(threads);
     thread->Enqueue(std::tuple<uint32_t,uint32_t,Event>(job_id,task_id,event));
@@ -140,7 +138,7 @@ bool sentinel::worker_manager::Server::AssignTask(std::set<ThreadId> threads, ui
     if(ReadyToUpdateJobManager()) {
         UpdateJobManager();
     }
-    return true;
+    return thread->id_;
 }
 
 bool sentinel::worker_manager::Server::FinalizeWorkerManager() {

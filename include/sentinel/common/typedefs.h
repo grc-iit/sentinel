@@ -11,4 +11,5 @@
 typedef uint32_t JobId, WorkerManagerId, TaskId;
 typedef uint16_t ThreadId, StartThreadId, EndThreadId;
 typedef CharStruct NodeName;
+typedef std::size_t HashValue;
 #endif //SENTINEL_TYPEDEFS_H

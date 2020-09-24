@@ -214,9 +214,10 @@ typedef struct WorkerManagerResource{
     WorkerManagerId id_;
     CharStruct node_name_;
     std::set<ThreadId> threads_;
-    WorkerManagerResource():id_(),node_name_(),threads_(){}
-    WorkerManagerResource(const WorkerManagerResource &other):id_(other.id_), node_name_(other.node_name_), threads_(other.threads_) {}
-    WorkerManagerResource(WorkerManagerResource &&other):id_(other.id_),  node_name_(other.node_name_), threads_(other.threads_){}
+    std::unordered_set<ThreadId> excluded_threads_;
+    WorkerManagerResource():id_(),node_name_(),threads_(),excluded_threads_(){}
+    WorkerManagerResource(const WorkerManagerResource &other):id_(other.id_), node_name_(other.node_name_), threads_(other.threads_),excluded_threads_(other.excluded_threads_) {}
+    WorkerManagerResource(WorkerManagerResource &&other):id_(other.id_),  node_name_(other.node_name_), threads_(other.threads_),excluded_threads_(other.excluded_threads_){}
     /*Define Assignment Operator*/
     WorkerManagerResource &operator=(const WorkerManagerResource &other)= default;
 
