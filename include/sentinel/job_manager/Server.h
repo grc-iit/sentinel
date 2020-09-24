@@ -35,8 +35,8 @@ namespace sentinel::job_manager{
         // Maintains load of each worker manager
         std::unordered_map<WorkerManagerId, WorkerManagerStats> loadMap;
         // Maintains lowest load worker on top
-        std::map<WorkerManagerStats, WorkerManagerId> reversed_loadMap;
-
+        std::multimap<WorkerManagerStats, WorkerManagerId> reversed_loadMap;
+        std::vector<WorkerManagerResource> worker_managers;
         // Maintains available resources per worker manager instance
         std::unordered_map<WorkerManagerId, WorkerManagerResource> available_workermanagers;
         // Maintains resources allocated per job
@@ -52,7 +52,7 @@ namespace sentinel::job_manager{
     public:
         void Run(std::future<void> futureObj,common::Daemon<Server> * daemon);
 
-        Server(){
+        Server():worker_managers(){
             SENTINEL_CONF->ConfigureJobManagerServer();
             auto basket=BASKET_CONF;
             rpc=basket::Singleton<RPCFactory>::GetInstance()->GetRPC(BASKET_CONF->RPC_PORT);
@@ -77,9 +77,11 @@ namespace sentinel::job_manager{
                 WorkerManagerResource resource;
                 resource.id_=i;
                 resource.node_name_=node;
+                resource.port_=SENTINEL_CONF->WORKERMANAGER_PORT_SERVER+i;
                 for(int i=0;i<SENTINEL_CONF->WORKERTHREAD_COUNT;++i)
                     resource.threads_.insert(i);
                 available_workermanagers.insert({i, resource});
+                worker_managers.emplace_back(resource);
                 i++;
             }
         }

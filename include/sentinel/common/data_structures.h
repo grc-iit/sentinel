@@ -213,11 +213,12 @@ typedef struct WorkerManagerStats {
 typedef struct WorkerManagerResource{
     WorkerManagerId id_;
     CharStruct node_name_;
+    uint16_t port_;
     std::set<ThreadId> threads_;
     std::unordered_set<ThreadId> excluded_threads_;
-    WorkerManagerResource():id_(),node_name_(),threads_(),excluded_threads_(){}
-    WorkerManagerResource(const WorkerManagerResource &other):id_(other.id_), node_name_(other.node_name_), threads_(other.threads_),excluded_threads_(other.excluded_threads_) {}
-    WorkerManagerResource(WorkerManagerResource &&other):id_(other.id_),  node_name_(other.node_name_), threads_(other.threads_),excluded_threads_(other.excluded_threads_){}
+    WorkerManagerResource():id_(),node_name_(),threads_(),excluded_threads_(),port_(){}
+    WorkerManagerResource(const WorkerManagerResource &other):id_(other.id_), node_name_(other.node_name_), threads_(other.threads_),excluded_threads_(other.excluded_threads_),port_(other.port_) {}
+    WorkerManagerResource(WorkerManagerResource &&other):id_(other.id_),  node_name_(other.node_name_), threads_(other.threads_),excluded_threads_(other.excluded_threads_),port_(other.port_) {}
     /*Define Assignment Operator*/
     WorkerManagerResource &operator=(const WorkerManagerResource &other)= default;
 

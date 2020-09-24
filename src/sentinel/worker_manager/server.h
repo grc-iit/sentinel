@@ -13,6 +13,7 @@
 #include <common/daemon.h>
 #include <sentinel/common/data_structures.h>
 #include <sentinel/job_manager/client.h>
+#include <sentinel/worker_manager/client.h>
 
 namespace sentinel::worker_manager {
     class Server;
@@ -44,13 +45,11 @@ namespace sentinel::worker_manager {
 
     class Server {
     private:
-        std::shared_ptr<sentinel::job_manager::client> job_manager;
         sentinel::ThreadPool<Worker> pool_;
         std::shared_ptr<RPC> client_rpc_;
         uint32_t num_tasks_assigned_, min_tasks_assigned_update_;
         common::debug::Timer epoch_timer_;
         uint32_t epoch_msec_;
-
         int rank_ = 0;
     private:
         bool ReadyToUpdateJobManager();
@@ -64,6 +63,8 @@ namespace sentinel::worker_manager {
         common::Daemon<Server> *daemon;
 
     public:
+        std::shared_ptr<sentinel::job_manager::client> job_manager;
+        std::shared_ptr<sentinel::worker_manager::Client> worker_manager;
         Server();
 
         void Init();

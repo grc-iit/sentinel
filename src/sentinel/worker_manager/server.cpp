@@ -34,6 +34,7 @@ sentinel::worker_manager::Server::Server() : num_tasks_assigned_(0) {
     while(pool_.Size() < pool_.MaxSize()) {
         pool_.Assign(i,this, i++);
     }
+    worker_manager = basket::Singleton<sentinel::worker_manager::Client>::GetInstance();
 }
 
 void sentinel::worker_manager::Server::Init() {
@@ -218,16 +219,16 @@ int sentinel::worker_manager::Worker::GetQueueDepth() {
 }
 
 bool sentinel::worker_manager::Worker::EmitCallback(uint32_t job_id, uint32_t current_task_id, Event &output_event) {
-    auto next_tasks = basket::Singleton<sentinel::job_manager::client>::GetInstance()->GetNextNode(job_id, current_task_id,output_event);
+    auto next_tasks = server_->job_manager->GetNextNode(job_id, current_task_id,output_event);
     for(auto next_task:next_tasks){
         uint32_t worker_index=std::get<0>(next_task);
         auto threads=std::get<1>(next_task);
         uint32_t next_task_id=std::get<2>(next_task);
-        if(BASKET_CONF->MPI_RANK == worker_index){
+        auto my_id = SENTINEL_CONF->WORKERMANAGER_ID;
+        if(my_id == worker_index){
             server_->AssignTask(threads,job_id,next_task_id,output_event);
         }else{
-            basket::Singleton<sentinel::worker_manager::Client>::GetInstance()->AssignTask(
-                    worker_index,threads,job_id,next_task_id, output_event);
+            server_->worker_manager->AssignTask(worker_index,threads,job_id,next_task_id, output_event);
         }
     }
     return true;

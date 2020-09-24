@@ -30,12 +30,12 @@ namespace sentinel {
             config(doc, "JOBMANAGER_HOST_FILE", JOBMANAGER_HOST_FILE);
             config(doc, "WORKERMANAGER_HOST_FILE", WORKERMANAGER_HOST_FILE);
             config(doc, "JOBMANAGER_PORT", JOBMANAGER_PORT);
-            config(doc, "WORKERMANAGER_PORT", WORKERMANAGER_PORT);
+            config(doc, "WORKERMANAGER_PORT_SERVER", WORKERMANAGER_PORT_SERVER);
+            config(doc, "WORKERMANAGER_PORT_CLIENT", WORKERMANAGER_PORT_CLIENT);
             config(doc, "JOBMANAGER_RPC_THREADS", JOBMANAGER_RPC_THREADS);
             config(doc, "WORKERMANAGER_RPC_THREADS", WORKERMANAGER_RPC_THREADS);
             config(doc, "JOBMANAGER_DIR", JOBMANAGER_DIR);
             config(doc, "WORKERMANAGER_DIR", WORKERMANAGER_DIR);
-            config(doc, "WORKERMANAGER_DINAMIC_HOSTFILE", WORKERMANAGER_DINAMIC_HOSTFILE);
             config(doc, "WORKERMANAGER_EXECUTABLE", WORKERMANAGER_EXECUTABLE);
             config(doc, "JOBMANAGER_COUNT", JOBMANAGER_COUNT);
             config(doc, "WORKERMANAGER_COUNT", WORKERMANAGER_COUNT);
@@ -49,10 +49,10 @@ namespace sentinel {
         }
     public:
         CharStruct JOBMANAGER_HOST_FILE, WORKERMANAGER_HOST_FILE;
-        uint16_t JOBMANAGER_PORT, WORKERMANAGER_PORT;
+        WorkerManagerId WORKERMANAGER_ID;
+        uint16_t JOBMANAGER_PORT, WORKERMANAGER_PORT_CLIENT,WORKERMANAGER_PORT_SERVER;
         uint16_t JOBMANAGER_RPC_THREADS, WORKERMANAGER_RPC_THREADS;
         CharStruct JOBMANAGER_DIR, WORKERMANAGER_DIR;
-        CharStruct WORKERMANAGER_DINAMIC_HOSTFILE;
         CharStruct WORKERMANAGER_EXECUTABLE;
         uint16_t JOBMANAGER_COUNT, WORKERMANAGER_COUNT;
         uint16_t WORKERTHREAD_COUNT, WORKERMANAGER_EPOCH_MS, WORKERMANAGER_UPDATE_MIN_TASKS, WORKERTHREAD_TIMOUT_MS;
@@ -64,26 +64,30 @@ namespace sentinel {
 
 
         ConfigurationManager() : common::ConfigurationManager("/home/user/sentinel/conf/base_rhea.conf"),
-                                 JOBMANAGER_HOST_FILE("${HOME}/projects/rhea/sentinel/conf/hostfile"),
-                                 WORKERMANAGER_HOST_FILE("${HOME}/projects/rhea/sentinel/conf/hostfile"),
+                                 JOBMANAGER_HOST_FILE("${HOME}/projects/rhea/scripts/local/job_manager"),
+                                 WORKERMANAGER_HOST_FILE("${HOME}/projects/rhea/scripts/local/worker_manager"),
                                  JOBMANAGER_PORT(9000),
-                                 WORKERMANAGER_PORT(10000),
+                                 WORKERMANAGER_PORT_CLIENT(10000),
+                                 WORKERMANAGER_PORT_SERVER(10000),
                                  JOBMANAGER_RPC_THREADS(4),
+                                 WORKERMANAGER_ID(0),
                                  WORKERMANAGER_RPC_THREADS(4),
-                                 DEFAULT_RESOURCE_ALLOCATION(0, 1,1,4),
+                                 DEFAULT_RESOURCE_ALLOCATION(0, 1,2,4),
                                  JOBMANAGER_DIR("/dev/shm/hari/single_node_jobmanager_server"), //TODO: CHECK if they have to be different
                                  WORKERMANAGER_DIR("/dev/shm/hari/single_node_workermanager_server"),
-                                 WORKERMANAGER_DINAMIC_HOSTFILE("${HOME}/projects/rhea/sentinel/conf/hostfile"),
                                  WORKERMANAGER_EXECUTABLE("${HOME}/projects/rhea/build/sentinel/sentinel_worker_manager"),
                                  JOBMANAGER_COUNT(1),
                                  WORKERMANAGER_COUNT(1),
-                                 WORKERTHREAD_COUNT(8),
+                                 WORKERTHREAD_COUNT(4),
                                  WORKERMANAGER_EPOCH_MS(50),
                                  WORKERMANAGER_UPDATE_MIN_TASKS(256),
                                  WORKERTHREAD_TIMOUT_MS(100),
                                  MAX_LOAD(0.8),
                                  WORKERMANAGER_LISTS({"localhost"}),
-                                 RANDOM_SEED(100){}
+                                 RANDOM_SEED(100){
+            LoadConfiguration();
+            WORKERMANAGER_LISTS=GetServers(WORKERMANAGER_HOST_FILE);
+        }
 
 
 
@@ -107,7 +111,7 @@ namespace sentinel {
         void ConfigureWorkermanagerClient() {
             LoadConfiguration();
             BASKET_CONF->ConfigureDefaultClient(WORKERMANAGER_HOST_FILE.c_str());
-            BASKET_CONF->RPC_PORT = WORKERMANAGER_PORT;
+            BASKET_CONF->RPC_PORT = WORKERMANAGER_PORT_CLIENT;
             WORKERMANAGER_COUNT = BASKET_CONF->NUM_SERVERS;
         }
 
@@ -118,7 +122,7 @@ namespace sentinel {
             BASKET_CONF->BACKED_FILE_DIR=WORKERMANAGER_DIR;
             BASKET_CONF->ConfigureDefaultServer(WORKERMANAGER_HOST_FILE.c_str());
             WORKERMANAGER_COUNT = BASKET_CONF->NUM_SERVERS;
-            BASKET_CONF->RPC_PORT = WORKERMANAGER_PORT;
+            BASKET_CONF->RPC_PORT = WORKERMANAGER_PORT_SERVER;
         }
 
 
