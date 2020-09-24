@@ -59,7 +59,6 @@ bool sentinel::job_manager::Server::SubmitJob(JobId jobId, TaskId num_sources){
             }else current_worker_thread = workers[current_worker_index].threads_.begin();
         }
     }
-    std::cout << "job Spawned" <<std::endl;
 }
 
 bool sentinel::job_manager::Server::TerminateJob(JobId jobId){

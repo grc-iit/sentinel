@@ -199,16 +199,14 @@ void sentinel::worker_manager::Worker::GetAndExecuteTask(std::future<void> loop_
 
 void sentinel::worker_manager::Worker::Run(std::future<void> loop_cond,Server* server, ThreadId id) {
     AUTO_TRACER("sentinel::worker_manager::Worker::Run");
-    std::promise<void> exitSignal;
-    std::future<void> futureObj = exitSignal.get_future();
     server_=server;
     id_=id;
+    pthread_setname_np(pthread_self(), std::to_string(id_).c_str());
     do {
         while (queue_.Size() > 0) {
-            GetAndExecuteTask(std::move(futureObj));
+            GetAndExecuteTask(std::move(loop_cond));
         }
     } while(loop_cond.wait_for(std::chrono::milliseconds(thread_timeout_ms_)) == std::future_status::timeout);
-    exitSignal.set_value();
 }
 
 void sentinel::worker_manager::Worker::Enqueue(std::tuple<uint32_t,uint32_t,Event> id) {
