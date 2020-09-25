@@ -286,7 +286,7 @@ bool sentinel::job_manager::Server::SpawnWorkerManagers(ThreadId required_thread
         MPI_Comm workerManagerComm=MPI_Comm();
         int errcodes[1];
         MPI_Comm_spawn(cmd, mpi_argv, 1, info, 0, MPI_COMM_WORLD, &workerManagerComm, errcodes );
-        if( errcodes[0] != MPI_SUCCESS) throw ErrorException(SPAWN_WORKERMANAGER_FAILED);
+        //if( errcodes[0] != MPI_SUCCESS) throw ErrorException(SPAWN_WORKERMANAGER_FAILED);
     }
     return true;
 }
