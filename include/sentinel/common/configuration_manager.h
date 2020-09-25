@@ -47,6 +47,7 @@ namespace sentinel {
             config(doc, "RANDOM_SEED", RANDOM_SEED);
             boost::filesystem::create_directories(JOBMANAGER_DIR.c_str());
             boost::filesystem::create_directories(WORKERMANAGER_DIR.c_str());
+            WORKERMANAGER_LISTS=GetServers(WORKERMANAGER_HOST_FILE);
         }
     public:
         CharStruct JOBMANAGER_HOST_FILE, WORKERMANAGER_HOST_FILE;
@@ -88,7 +89,6 @@ namespace sentinel {
                                  WORKERMANAGER_LISTS({"localhost"}),
                                  RANDOM_SEED(100){
             LoadConfiguration();
-            WORKERMANAGER_LISTS=GetServers(WORKERMANAGER_HOST_FILE);
         }
 
 
