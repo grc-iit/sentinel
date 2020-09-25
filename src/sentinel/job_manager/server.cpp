@@ -285,9 +285,8 @@ bool sentinel::job_manager::Server::SpawnWorkerManagers(ThreadId required_thread
 //        }
 //        printf("%s",result.c_str());
 //
-        printf("%s %s\n",worker_resource.node_name_.data(),SENTINEL_CONF->WORKERMANAGER_HOST_FILE.c_str());
-        MPI_Info_set(info,"add-host", worker_resource.node_name_.data());
-        MPI_Info_set(info,"add-hostfile", SENTINEL_CONF->WORKERMANAGER_HOST_FILE.c_str());
+        MPI_Info_set(info,"host", worker_resource.node_name_.data());
+        //MPI_Info_set(info,"add-hostfile", SENTINEL_CONF->WORKERMANAGER_HOST_FILE.c_str());
         //MPI_Info_set(info,"map-by", "node");
         char * mpi_argv[4];
         mpi_argv[0] = SENTINEL_CONF->CONFIGURATION_FILE.data();
@@ -296,7 +295,7 @@ bool sentinel::job_manager::Server::SpawnWorkerManagers(ThreadId required_thread
         mpi_argv[3] = (char *)0;
         MPI_Comm workerManagerComm=MPI_Comm();
         int errcodes[1];
-        MPI_Comm_spawn(cmd, mpi_argv, 1, MPI_INFO_NULL, 0, MPI_COMM_WORLD, &workerManagerComm, MPI_ERRCODES_IGNORE );
+        MPI_Comm_spawn(cmd, mpi_argv, 1, MPI_INFO_NULL, 0, MPI_COMM_WORLD, &workerManagerComm, errcodes );
         if( errcodes[0] != MPI_SUCCESS) throw ErrorException(SPAWN_WORKERMANAGER_FAILED);
     }
     return true;
