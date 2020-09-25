@@ -54,7 +54,8 @@ public:
     }
 
     void Stop() {
-        loop_cond_.set_value();
+        if(thread_complete_.valid());
+            loop_cond_.set_value();
     }
 
     void Wait(int timeout_ms = 25) {
