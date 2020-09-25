@@ -286,8 +286,8 @@ bool sentinel::job_manager::Server::SpawnWorkerManagers(ThreadId required_thread
 //        printf("%s",result.c_str());
 //
         printf("%s %s\n",worker_resource.node_name_.data(),SENTINEL_CONF->WORKERMANAGER_HOST_FILE.c_str());
-        MPI_Info_set(info,"host", worker_resource.node_name_.data());
-        MPI_Info_set(info,"hostfile", SENTINEL_CONF->WORKERMANAGER_HOST_FILE.c_str());
+        MPI_Info_set(info,"add-host", worker_resource.node_name_.data());
+        MPI_Info_set(info,"add-hostfile", SENTINEL_CONF->WORKERMANAGER_HOST_FILE.c_str());
         //MPI_Info_set(info,"map-by", "node");
         char * mpi_argv[4];
         mpi_argv[0] = SENTINEL_CONF->CONFIGURATION_FILE.data();
