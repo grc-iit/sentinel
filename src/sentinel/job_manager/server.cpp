@@ -31,7 +31,7 @@ bool sentinel::job_manager::Server::SubmitJob(JobId jobId, TaskId num_sources){
     auto threads = defaultResourceAllocation.num_nodes_ * defaultResourceAllocation.num_procs_per_node * defaultResourceAllocation.num_threads_per_proc;
     SpawnWorkerManagers(threads, jobId);
 
-    usleep(40000);
+    sleep(1);
 
     auto collector = job->GetTask();
     auto current_worker_index = 0;
@@ -268,26 +268,7 @@ bool sentinel::job_manager::Server::SpawnWorkerManagers(ThreadId required_thread
     resourced_lock.unlock();
     for(const auto& worker_index:new_worker_spawn){
         auto worker_resource = worker_managers[worker_index];
-//        //-host %s worker_resource.node_name_.data(), %s %d %d
-//        auto size = snprintf(NULL,0,"mpirun -n 1 %s ",SENTINEL_CONF->WORKERMANAGER_EXECUTABLE.c_str(),SENTINEL_CONF->CONFIGURATION_FILE.data(),worker_resource.port_,worker_resource.id_,worker_resource.id_);
-//        size +=1;
-//        char* cmd = (char*)malloc(size);
-//        snprintf(cmd,size,"mpirun -n 1 %s",SENTINEL_CONF->WORKERMANAGER_EXECUTABLE.c_str(),SENTINEL_CONF->CONFIGURATION_FILE.data(),worker_resource.port_,worker_resource.id_,worker_resource.id_);
-//        printf("%s\n",cmd);
-//        FILE *fp;
-//        std::array<char, 128> buffer;
-//        std::string result;
-//        std::shared_ptr<FILE> pipe(popen(cmd, "r"), pclose);
-//        if (!pipe) throw std::runtime_error("popen() failed!");
-//        while (!feof(pipe.get())) {
-//            if (fgets(buffer.data(), 128, pipe.get()) != nullptr)
-//                result += buffer.data();
-//        }
-//        printf("%s",result.c_str());
-//
         MPI_Info_set(info,"host", worker_resource.node_name_.data());
-        //MPI_Info_set(info,"add-hostfile", SENTINEL_CONF->WORKERMANAGER_HOST_FILE.c_str());
-        //MPI_Info_set(info,"map-by", "node");
         char * mpi_argv[4];
         mpi_argv[0] = SENTINEL_CONF->CONFIGURATION_FILE.data();
         mpi_argv[1] = std::to_string(worker_resource.port_).data();
