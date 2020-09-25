@@ -268,7 +268,7 @@ bool sentinel::job_manager::Server::SpawnWorkerManagers(ThreadId required_thread
     resourced_lock.unlock();
     for(const auto& worker_index:new_worker_spawn){
         auto worker_resource = worker_managers[worker_index];
-        MPI_Info_set(info,"add-hostfile", SENTINEL_CONF->WORKERMANAGER_HOST_FILE.c_str());
+        MPI_Info_set(info,"hostfile", SENTINEL_CONF->WORKERMANAGER_HOST_FILE.c_str());
         char * mpi_argv[4];
         mpi_argv[0] = SENTINEL_CONF->CONFIGURATION_FILE.data();
         mpi_argv[1] = std::to_string(worker_resource.port_).data();
