@@ -59,7 +59,7 @@ void sentinel::worker_manager::Server::Run(std::future<void> loop_cond, common::
 
 std::shared_ptr<sentinel::worker_manager::Worker>
 sentinel::worker_manager::Server::FindMinimumQueue(std::set<ThreadId> &threads) {
-    AUTO_TRACER("sentinel::worker_manager::Server::FindMinimumQueue");
+    AUTO_TRACER("sentinel::worker_manager::Server::FindMinimumQueue",threads);
     std::shared_ptr<Worker> worker;
     size_t min_queue_size = std::numeric_limits<size_t>::max();
     if(threads.size() == 0) {
@@ -90,13 +90,6 @@ sentinel::worker_manager::Server::FindMinimumQueue(std::set<ThreadId> &threads) 
 }
 
 int sentinel::worker_manager::Server::GetNumTasksQueued(void) {
-    /**
-     * TODO: Dont ping the queues all the time.
-     * Approach 1: Maintain a counter locally an atomic_int which can be updated
-     * Approach 2: also try keeping a array of size max threads for each thread this will avoid locking
-     * Check which is faster through quick benchmark. (my intuition is both should be fine)
-     */
-
     AUTO_TRACER("sentinel::worker_manager::Server::GetNumTasksQueued");
     int num_tasks_queued = 0;
 
@@ -129,7 +122,7 @@ bool sentinel::worker_manager::Server::UpdateJobManager() {
 }
 
 ThreadId sentinel::worker_manager::Server::AssignTask(std::set<ThreadId> threads, JobId job_id, TaskId task_id, Event &event) {
-    AUTO_TRACER("sentinel::worker_manager::Server::AssignTask", task_id);
+    AUTO_TRACER("sentinel::worker_manager::Server::AssignTask", threads,task_id,task_id,event);
     //Enqueue work in existing thread
     std::shared_ptr<Worker> thread = FindMinimumQueue(threads);
     thread->Enqueue(std::tuple<uint32_t,uint32_t,Event>(job_id,task_id,event));
@@ -191,6 +184,7 @@ void sentinel::worker_manager::Worker::ExecuteTask(std::tuple<uint32_t,uint32_t,
 }
 
 void sentinel::worker_manager::Worker::GetAndExecuteTask(std::future<void> loop_cond) {
+    AUTO_TRACER("sentinel::worker_manager::Worker::GetAndExecuteTask");
     ExecuteTask(GetTask(),std::move(loop_cond));
     std::tuple<uint32_t,uint32_t,Event> id;
     queue_.Pop(id);
@@ -209,7 +203,7 @@ void sentinel::worker_manager::Worker::Run(std::future<void> loop_cond,Server* s
 }
 
 void sentinel::worker_manager::Worker::Enqueue(std::tuple<uint32_t,uint32_t,Event> id) {
-    AUTO_TRACER("sentinel::worker_manager::Worker::Enqueue");
+    AUTO_TRACER("sentinel::worker_manager::Worker::Enqueue",id);
     queue_.Push(id);
 }
 
@@ -219,6 +213,7 @@ int sentinel::worker_manager::Worker::GetQueueDepth() {
 }
 
 bool sentinel::worker_manager::Worker::EmitCallback(uint32_t job_id, uint32_t current_task_id, Event &output_event) {
+    AUTO_TRACER("sentinel::worker_manager::Worker::EmitCallback",job_id,current_task_id,output_event);
     auto next_tasks = server_->job_manager->GetNextNode(job_id, current_task_id,output_event);
     for(auto next_task:next_tasks){
         uint32_t worker_index=std::get<0>(next_task);

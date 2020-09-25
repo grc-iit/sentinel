@@ -12,6 +12,7 @@
 #include <basket.h>
 #include <string>
 #include <sentinel/common/configuration_manager.h>
+#include <common/debug.h>
 
 namespace sentinel::worker_manager {
 
@@ -23,7 +24,6 @@ public:
     void Init();
     ThreadId AssignTask(int server_index, std::set<ThreadId> threads, uint32_t job_id, uint32_t task_id, Event &event);
     bool FinalizeWorkerManager(int server_index);
-    void Finalize();
 };
 
 };

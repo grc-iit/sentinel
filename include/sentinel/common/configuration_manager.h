@@ -72,7 +72,7 @@ namespace sentinel {
                                  JOBMANAGER_RPC_THREADS(4),
                                  WORKERMANAGER_ID(0),
                                  WORKERMANAGER_RPC_THREADS(4),
-                                 DEFAULT_RESOURCE_ALLOCATION(0, 1,2,4),
+                                 DEFAULT_RESOURCE_ALLOCATION(0, 1,1,2),
                                  JOBMANAGER_DIR("/dev/shm/hari/single_node_jobmanager_server"), //TODO: CHECK if they have to be different
                                  WORKERMANAGER_DIR("/dev/shm/hari/single_node_workermanager_server"),
                                  WORKERMANAGER_EXECUTABLE("${HOME}/projects/rhea/build/sentinel/sentinel_worker_manager"),

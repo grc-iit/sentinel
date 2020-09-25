@@ -8,11 +8,6 @@ include_directories(src)
 include_directories(include)
 include_directories(${CMAKE_SOURCE_DIR}/scs_io_common/include)
 
-#Debug flags
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DCOMMON_DEBUG_MSG")
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DCOMMON_DEBUG_TIMER")
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DCOMMON_DEBUG_TRACE")
-
 
 set(LIBS -lpthread -lbasket -lrpc  -lboost_system -lboost_filesystem -lmpi -L${CMAKE_BINARY_DIR}/scs_io_common -lscs_io_common -ldl)
 

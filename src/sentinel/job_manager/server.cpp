@@ -31,7 +31,7 @@ bool sentinel::job_manager::Server::SubmitJob(JobId jobId, TaskId num_sources){
     auto threads = defaultResourceAllocation.num_nodes_ * defaultResourceAllocation.num_procs_per_node * defaultResourceAllocation.num_threads_per_proc;
     SpawnWorkerManagers(threads, jobId);
 
-    sleep(1);
+    usleep(40000);
 
     auto collector = job->GetTask();
     auto current_worker_index = 0;
@@ -67,7 +67,7 @@ bool sentinel::job_manager::Server::SubmitJob(JobId jobId, TaskId num_sources){
 }
 
 bool sentinel::job_manager::Server::TerminateJob(JobId jobId){
-    AUTO_TRACER("sentinel::job_manager::Server::TerminateJob");
+    AUTO_TRACER("sentinel::job_manager::Server::TerminateJob",jobId);
     auto kill_worker_managers = std::vector<WorkerManagerId>();
     std::unique_lock resource_lock_ex(resources_mutex_);
     auto possible_job = used_resources.find(jobId);
@@ -115,6 +115,7 @@ bool sentinel::job_manager::Server::TerminateJob(JobId jobId){
 }
 
 bool sentinel::job_manager::Server::UpdateWorkerManagerStats(WorkerManagerId workerManagerId, WorkerManagerStats &stats){
+    AUTO_TRACER("sentinel::job_manager::Server::UpdateWorkerManagerStats",workerManagerId,stats);
     std::unique_lock load_lock(load_mutex_);
     auto possible_load = loadMap.find(workerManagerId);
     if (possible_load == loadMap.end()){
@@ -130,6 +131,7 @@ bool sentinel::job_manager::Server::UpdateWorkerManagerStats(WorkerManagerId wor
 }
 
 std::pair<bool, WorkerManagerStats> sentinel::job_manager::Server::GetWorkerManagerStats(WorkerManagerId workerManagerId){
+    AUTO_TRACER("sentinel::job_manager::Server::UpdateWorkerManagerStats",workerManagerId);
     auto possible_load = loadMap.find(workerManagerId);
     if (possible_load == loadMap.end()) return std::pair<bool, WorkerManagerStats>(false, WorkerManagerStats());
     return std::pair<bool, WorkerManagerStats>(true, possible_load->second);
@@ -137,7 +139,7 @@ std::pair<bool, WorkerManagerStats> sentinel::job_manager::Server::GetWorkerMana
 
 
 std::vector<std::tuple<JobId , std::set<ThreadId>, TaskId>> sentinel::job_manager::Server::GetNextNode(JobId job_id, TaskId currentTaskId, Event &event){
-    AUTO_TRACER("job_manager::GetNextNode::resources", job_id, currentTaskId);
+    AUTO_TRACER("job_manager::GetNextNode::resources", job_id, currentTaskId,event);
     auto newTasks = jobs.at(job_id)->GetTask(currentTaskId)->links;
     auto next_tasks = std::vector<std::tuple<JobId , std::set<ThreadId>, TaskId>>();
     for(const auto& task:newTasks){
@@ -205,6 +207,7 @@ std::vector<std::tuple<JobId , std::set<ThreadId>, TaskId>> sentinel::job_manage
 }
 
 bool sentinel::job_manager::Server::ChangeResourceAllocation(ResourceAllocation &resourceAllocation){
+    AUTO_TRACER("job_manager::Server::ChangeResourceAllocation", resourceAllocation);
     auto threads = resourceAllocation.num_nodes_ * resourceAllocation.num_procs_per_node * resourceAllocation.num_threads_per_proc;
     if( resourceAllocation.num_nodes_ > 0) return SpawnWorkerManagers(threads,resourceAllocation.job_id_);
     else if( resourceAllocation.num_nodes_ == 0) return TerminateWorkerManagers(resourceAllocation);
@@ -212,6 +215,7 @@ bool sentinel::job_manager::Server::ChangeResourceAllocation(ResourceAllocation 
 }
 
 bool sentinel::job_manager::Server::SpawnWorkerManagers(ThreadId required_threads, JobId job_id) {
+    AUTO_TRACER("job_manager::Server::SpawnWorkerManagers", required_threads,job_id);
     char* cmd = SENTINEL_CONF->WORKERMANAGER_EXECUTABLE.data();
     MPI_Info info;
     MPI_Info_create(&info);
@@ -280,6 +284,7 @@ bool sentinel::job_manager::Server::SpawnWorkerManagers(ThreadId required_thread
 }
 
 bool sentinel::job_manager::Server::TerminateWorkerManagers(ResourceAllocation &resourceAllocation){
+    AUTO_TRACER("job_manager::Server::TerminateWorkerManagers", resourceAllocation);
     auto workermanager_client = basket::Singleton<sentinel::worker_manager::Client>::GetInstance();
     for(int i=resourceAllocation.num_nodes_; i < 0; i++){
         std::unique_lock load_lock(load_mutex_);
