@@ -11,9 +11,9 @@ include_directories(${CMAKE_SOURCE_DIR}/scs_io_common/include)
 
 set(LIBS -lpthread -lbasket -lrpc  -lboost_system -lboost_filesystem -lmpi -L${CMAKE_BINARY_DIR}/scs_io_common -lscs_io_common -ldl)
 
-set(SENTINEL_COMMON include/sentinel/common/configuration_manager.h include/sentinel/common/data_structures.h
-        include/sentinel/common/enumerations.h include/sentinel/common/error_codes.h include/sentinel/common/error_definition.h
-        ../scs_io_common/include/common/daemon.h include/sentinel/common/typedefs.h)
+set(SENTINEL_COMMON ${CMAKE_SOURCE_DIR}/sentinel/include/sentinel/common/configuration_manager.h ${CMAKE_SOURCE_DIR}/sentinel/include/sentinel/common/data_structures.h
+        ${CMAKE_SOURCE_DIR}/sentinel/include/sentinel/common/enumerations.h ${CMAKE_SOURCE_DIR}/sentinel/include/sentinel/common/error_codes.h ${CMAKE_SOURCE_DIR}/sentinel/include/sentinel/common/error_definition.h
+        ${CMAKE_SOURCE_DIR}/scs_io_common/include/common/daemon.h ${CMAKE_SOURCE_DIR}/sentinel/include/sentinel/common/typedefs.h)
 
 set(SENTINEL_LIB ${SENTINEL_COMMON} src/sentinel/job_manager/client.cpp include/sentinel/job_manager/client.h src/sentinel/worker_manager/client.cpp include/sentinel/worker_manager/client.h src/sentinel/monitor/client.cpp include/sentinel/monitor/client.h)
 add_library(sentinel SHARED ${SENTINEL_LIB})
@@ -24,14 +24,14 @@ if(DISABLE_DYNAMIC_LOAD)
     message(STATUS "DISABLE_DYNAMIC_LOAD ${DISABLE_DYNAMIC_LOAD}")
     include_directories(${CMAKE_SOURCE_DIR}/include)
     include_directories(${CMAKE_SOURCE_DIR}/rhea_job/include)
-    set(SENTINEL_JOB_MANAGER ${SENTINEL_COMMON} src/sentinel/job_manager/server.cpp include/sentinel/job_manager/Server.h src/sentinel/job_manager/main.cpp)
-    add_executable(sentinel_job_manager ${SENTINEL_JOB_MANAGER})
+    set(SENTINEL_JOB_MANAGER ${SENTINEL_COMMON} ${CMAKE_SOURCE_DIR}/sentinel/src/sentinel/job_manager/server.cpp ${CMAKE_SOURCE_DIR}/sentinel/include/sentinel/job_manager/Server.h)
+    add_executable(sentinel_job_manager ${SENTINEL_JOB_MANAGER} ${CMAKE_SOURCE_DIR}/sentinel/src/sentinel/job_manager/main.cpp)
     add_dependencies(sentinel_job_manager sentinel)
     target_link_libraries(sentinel_job_manager ${LIBS} sentinel rhea_job rhea)
 else()
     message(STATUS "NOT_DISABLE_DYNAMIC_LOAD ${DISABLE_DYNAMIC_LOAD}")
-    set(SENTINEL_JOB_MANAGER ${SENTINEL_COMMON} src/sentinel/job_manager/server.cpp include/sentinel/job_manager/Server.h src/sentinel/job_manager/main.cpp)
-    add_executable(sentinel_job_manager ${SENTINEL_JOB_MANAGER})
+    set(SENTINEL_JOB_MANAGER ${SENTINEL_COMMON} ${CMAKE_SOURCE_DIR}/src/sentinel/job_manager/server.cpp ${CMAKE_SOURCE_DIR}/include/sentinel/job_manager/Server.h )
+    add_executable(sentinel_job_manager ${SENTINEL_JOB_MANAGER} ${CMAKE_SOURCE_DIR}/src/sentinel/job_manager/main.cpp)
     add_dependencies(sentinel_job_manager sentinel)
     target_link_libraries(sentinel_job_manager ${LIBS} sentinel)
 endif()

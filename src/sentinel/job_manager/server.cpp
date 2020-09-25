@@ -74,7 +74,6 @@ bool sentinel::job_manager::Server::TerminateJob(JobId jobId){
     if (possible_job == used_resources.end()) return false;
     auto workermanagers_used = used_resources.find(jobId);
     for(const auto& worker_manager_used: workermanagers_used->second){
-
         auto iter = available_workermanagers.find(worker_manager_used.id_);
         if(available_workermanagers.end() == iter){
             WorkerManagerResource resource;

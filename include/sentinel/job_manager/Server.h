@@ -25,7 +25,7 @@
 
 namespace sentinel::job_manager{
     class Server {
-    private:
+    public:
         common::Daemon<Server> * daemon;
         std::shared_ptr<RPC> rpc;
         std::shared_ptr<sentinel::worker_manager::Client> workermanager_client;
@@ -49,7 +49,7 @@ namespace sentinel::job_manager{
         bool TerminateWorkerManagers(ResourceAllocation &resourceAllocation);
 
         void RunInternal(std::future<void> futureObj);
-    public:
+
         void Run(std::future<void> futureObj,common::Daemon<Server> * daemon);
 
         Server():worker_managers(){

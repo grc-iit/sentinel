@@ -18,7 +18,7 @@ int main(int argc, char **argv) {
         conf = argv[1];
         port = atoi(argv[2]);
         id = atoi(argv[3]);
-        printf("Worker Manager %d Initialized with conf %s, port %d\n",id, conf.data(),port);
+        //printf("Worker Manager %d Initialized with conf %s, port %d\n",id, conf.data(),port);
     }else{
         perror("Not enough arguments ./worker_manager <conf> <port> <worker_manager_id>\n");
         exit(EXIT_FAILURE);
