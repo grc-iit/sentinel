@@ -268,24 +268,24 @@ bool sentinel::job_manager::Server::SpawnWorkerManagers(ThreadId required_thread
     resourced_lock.unlock();
     for(const auto& worker_index:new_worker_spawn){
         auto worker_resource = worker_managers[worker_index];
-        auto size = snprintf(NULL,0,"%s %s 1 %s %s %d %d",SENTINEL_CONF->WORKERMANAGER_SCRIPT.c_str(),worker_resource.node_name_.data(),SENTINEL_CONF->WORKERMANAGER_EXECUTABLE.c_str(),SENTINEL_CONF->CONFIGURATION_FILE.data(),worker_resource.port_,worker_resource.id_);
-        size +=1;
-        char* cmd = (char*)malloc(size);
-        snprintf(cmd,size,"%s %s 1 %s %s %d %d",SENTINEL_CONF->WORKERMANAGER_SCRIPT.c_str(),worker_resource.node_name_.data(),SENTINEL_CONF->WORKERMANAGER_EXECUTABLE.c_str(),SENTINEL_CONF->CONFIGURATION_FILE.data(),worker_resource.port_,worker_resource.id_);
-        auto output = system(cmd);
-        printf("%d",output);
+//        auto size = snprintf(NULL,0,"%s %s 1 %s %s %d %d",SENTINEL_CONF->WORKERMANAGER_SCRIPT.c_str(),worker_resource.node_name_.data(),SENTINEL_CONF->WORKERMANAGER_EXECUTABLE.c_str(),SENTINEL_CONF->CONFIGURATION_FILE.data(),worker_resource.port_,worker_resource.id_);
+//        size +=1;
+//        char* cmd = (char*)malloc(size);
+//        snprintf(cmd,size,"%s %s 1 %s %s %d %d",SENTINEL_CONF->WORKERMANAGER_SCRIPT.c_str(),worker_resource.node_name_.data(),SENTINEL_CONF->WORKERMANAGER_EXECUTABLE.c_str(),SENTINEL_CONF->CONFIGURATION_FILE.data(),worker_resource.port_,worker_resource.id_);
+//        auto output = system(cmd);
+//        printf("%d",output);
 //
-//        MPI_Info_set(info,"host", worker_resource.node_name_.data());
-//        MPI_Info_set(info,"map-by", "OVERSUBSCRIBE");
-//        char * mpi_argv[4];
-//        mpi_argv[0] = SENTINEL_CONF->CONFIGURATION_FILE.data();
-//        mpi_argv[1] = std::to_string(worker_resource.port_).data();
-//        mpi_argv[2] = std::to_string(worker_resource.id_).data();
-//        mpi_argv[3] = (char *)0;
-//        MPI_Comm workerManagerComm=MPI_Comm();
-//        int errcodes[1];
-//        MPI_Comm_spawn(cmd, mpi_argv, 1, info, 0, MPI_COMM_WORLD, &workerManagerComm, errcodes );
-//        if( errcodes[0] != MPI_SUCCESS) throw ErrorException(SPAWN_WORKERMANAGER_FAILED);
+        MPI_Info_set(info,"host", worker_resource.node_name_.data());
+        MPI_Info_set(info,"map-by", "OVERSUBSCRIBE");
+        char * mpi_argv[4];
+        mpi_argv[0] = SENTINEL_CONF->CONFIGURATION_FILE.data();
+        mpi_argv[1] = std::to_string(worker_resource.port_).data();
+        mpi_argv[2] = std::to_string(worker_resource.id_).data();
+        mpi_argv[3] = (char *)0;
+        MPI_Comm workerManagerComm=MPI_Comm();
+        int errcodes[1];
+        MPI_Comm_spawn(cmd, mpi_argv, 1, info, 0, MPI_COMM_WORLD, &workerManagerComm, errcodes );
+        if( errcodes[0] != MPI_SUCCESS) throw ErrorException(SPAWN_WORKERMANAGER_FAILED);
     }
     return true;
 }
