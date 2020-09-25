@@ -37,6 +37,7 @@ namespace sentinel {
             config(doc, "JOBMANAGER_DIR", JOBMANAGER_DIR);
             config(doc, "WORKERMANAGER_DIR", WORKERMANAGER_DIR);
             config(doc, "WORKERMANAGER_EXECUTABLE", WORKERMANAGER_EXECUTABLE);
+            config(doc, "WORKERMANAGER_SCRIPT", WORKERMANAGER_SCRIPT);
             config(doc, "JOBMANAGER_COUNT", JOBMANAGER_COUNT);
             config(doc, "WORKERMANAGER_COUNT", WORKERMANAGER_COUNT);
             config(doc, "WORKERTHREAD_COUNT", WORKERTHREAD_COUNT);
@@ -53,7 +54,7 @@ namespace sentinel {
         uint16_t JOBMANAGER_PORT, WORKERMANAGER_PORT_CLIENT,WORKERMANAGER_PORT_SERVER;
         uint16_t JOBMANAGER_RPC_THREADS, WORKERMANAGER_RPC_THREADS;
         CharStruct JOBMANAGER_DIR, WORKERMANAGER_DIR;
-        CharStruct WORKERMANAGER_EXECUTABLE;
+        CharStruct WORKERMANAGER_EXECUTABLE,WORKERMANAGER_SCRIPT;
         uint16_t JOBMANAGER_COUNT, WORKERMANAGER_COUNT;
         uint16_t WORKERTHREAD_COUNT, WORKERMANAGER_EPOCH_MS, WORKERMANAGER_UPDATE_MIN_TASKS, WORKERTHREAD_TIMOUT_MS;
         uint16_t RANDOM_SEED;
@@ -76,6 +77,7 @@ namespace sentinel {
                                  JOBMANAGER_DIR("/dev/shm/hari/single_node_jobmanager_server"), //TODO: CHECK if they have to be different
                                  WORKERMANAGER_DIR("/dev/shm/hari/single_node_workermanager_server"),
                                  WORKERMANAGER_EXECUTABLE("${HOME}/projects/rhea/build/sentinel/sentinel_worker_manager"),
+                                 WORKERMANAGER_SCRIPT("${HOME}/projects/rhea/scripts/execute_worker_manager.sh"),
                                  JOBMANAGER_COUNT(1),
                                  WORKERMANAGER_COUNT(1),
                                  WORKERTHREAD_COUNT(4),
