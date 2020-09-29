@@ -76,7 +76,7 @@ namespace sentinel {
                                  JOBMANAGER_RPC_THREADS(4),
                                  WORKERMANAGER_ID(0),
                                  WORKERMANAGER_RPC_THREADS(4),
-                                 DEFAULT_RESOURCE_ALLOCATION(0, 1,1,15),
+                                 DEFAULT_RESOURCE_ALLOCATION(0, 1,1,40),
                                  JOBMANAGER_DIR("/dev/shm/hari/single_node_jobmanager_server"), //TODO: CHECK if they have to be different
                                  WORKERMANAGER_DIR("/dev/shm/hari/single_node_workermanager_server"),
                                  WORKERMANAGER_EXECUTABLE("${HOME}/projects/rhea/build/sentinel/sentinel_worker_manager"),
@@ -84,7 +84,7 @@ namespace sentinel {
                                  JOBMANAGER_COUNT(1),
                                  COLLECTORS_PER_SOURCE(1),
                                  WORKERMANAGER_COUNT(1),
-                                 WORKERTHREAD_COUNT(15),
+                                 WORKERTHREAD_COUNT(40),
                                  WORKERMANAGER_EPOCH_MS(50),
                                  WORKERMANAGER_UPDATE_MIN_TASKS(256),
                                  WORKERTHREAD_TIMOUT_MS(100),
