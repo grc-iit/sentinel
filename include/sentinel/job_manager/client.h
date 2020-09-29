@@ -21,7 +21,7 @@ namespace sentinel::job_manager {
     public:
         client();
 
-        bool SubmitJob(uint32_t jobId, uint32_t num_sources);
+        bool SubmitJob(uint32_t jobId, uint32_t num_sources,uint32_t num_collectors_per_source);
 
         bool TerminateJob(uint32_t jobId);
 

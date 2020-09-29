@@ -12,7 +12,7 @@ void sentinel::job_manager::Server::RunInternal(std::future<void> futureObj) {
     }
 }
 
-bool sentinel::job_manager::Server::SubmitJob(JobId jobId, TaskId num_sources){
+bool sentinel::job_manager::Server::SubmitJob(JobId jobId, TaskId num_sources, uint32_t num_collectors_per_sources){
     AUTO_TRACER("sentinel::job_manager::Server::SubmitJob ", jobId, num_sources);
     auto classLoader = ClassLoader();
     std::shared_ptr<Job<Event>> job = classLoader.LoadClass<Job<Event>>(jobId);
@@ -40,30 +40,33 @@ bool sentinel::job_manager::Server::SubmitJob(JobId jobId, TaskId num_sources){
     auto workers = used_resources.find(jobId);
     resource_lock_shared.unlock();
     auto current_worker_thread = workers->second[current_worker_index].threads_.begin();
-    for(int i=0;i<num_sources;i++){
-        WorkerManagerId workermanager = workers->second[current_worker_index].id_;
+    for(int j=0;j<num_collectors_per_sources;++j){
+        for(int i=0;i<num_sources;i++){
+            WorkerManagerId workermanager = workers->second[current_worker_index].id_;
 
-        Event event;
-        event.id_ = std::to_string(i);
-        auto available_threads = std::set<ThreadId>();
-        for(const auto& thread:workers->second[current_worker_index].threads_){
-            auto iter =  workers->second[current_worker_index].excluded_threads_.find(thread);
-            if(iter == workers->second[current_worker_index].excluded_threads_.end()) available_threads.emplace(thread);
-        }
-        auto assigned_thread_id = workermanager_client->AssignTask(workermanager, available_threads, jobId, collector->id_,event);
-        workers->second[current_worker_index].excluded_threads_.emplace(assigned_thread_id);
-        //Lets ensure that load map is not empty
-        WorkerManagerStats wms = WorkerManagerStats();
-        UpdateWorkerManagerStats(workermanager, wms);
-        current_worker_thread++;
-        if(current_worker_thread == workers->second[current_worker_index].threads_.end()){
-            current_worker_index++;
-            if(workers->second.size() == current_worker_index && i != num_sources){
-                //TODO: throw error.
-                break;
-            }else current_worker_thread = workers->second[current_worker_index].threads_.begin();
+            Event event;
+            event.id_ = std::to_string(i);
+            auto available_threads = std::set<ThreadId>();
+            for(const auto& thread:workers->second[current_worker_index].threads_){
+                auto iter =  workers->second[current_worker_index].excluded_threads_.find(thread);
+                if(iter == workers->second[current_worker_index].excluded_threads_.end()) available_threads.emplace(thread);
+            }
+            auto assigned_thread_id = workermanager_client->AssignTask(workermanager, available_threads, jobId, collector->id_,event);
+            workers->second[current_worker_index].excluded_threads_.emplace(assigned_thread_id);
+            //Lets ensure that load map is not empty
+            WorkerManagerStats wms = WorkerManagerStats();
+            UpdateWorkerManagerStats(workermanager, wms);
+            current_worker_thread++;
+            if(current_worker_thread == workers->second[current_worker_index].threads_.end()){
+                current_worker_index++;
+                if(workers->second.size() == current_worker_index && i != num_sources){
+                    //TODO: throw error.
+                    break;
+                }else current_worker_thread = workers->second[current_worker_index].threads_.begin();
+            }
         }
     }
+
 }
 
 bool sentinel::job_manager::Server::TerminateJob(JobId jobId){

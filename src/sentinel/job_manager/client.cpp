@@ -10,10 +10,10 @@ sentinel::job_manager::client::client(){
     rpc=basket::Singleton<RPCFactory>::GetInstance()->GetRPC(BASKET_CONF->RPC_PORT);
 }
 
-bool sentinel::job_manager::client::SubmitJob(uint32_t jobId, uint32_t num_sources) {
+bool sentinel::job_manager::client::SubmitJob(uint32_t jobId, uint32_t num_sources, uint32_t num_collectors_per_source) {
     AUTO_TRACER("job_manager::client::SubmitJob", jobId,num_sources);
     int server = 0;
-    return rpc->call<RPCLIB_MSGPACK::object_handle>(server, "SubmitJob", jobId,num_sources) .as<bool>();
+    return rpc->call<RPCLIB_MSGPACK::object_handle>(server, "SubmitJob", jobId, num_sources, num_collectors_per_source) .as<bool>();
 }
 
 bool sentinel::job_manager::client::TerminateJob(uint32_t jobId) {

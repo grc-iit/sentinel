@@ -44,6 +44,7 @@ namespace sentinel {
             config(doc, "WORKERMANAGER_EPOCH_MS", WORKERMANAGER_EPOCH_MS);
             config(doc, "WORKERMANAGER_UPDATE_MIN_TASKS", WORKERMANAGER_UPDATE_MIN_TASKS);
             config(doc, "WORKERTHREAD_TIMOUT_MS", WORKERTHREAD_TIMOUT_MS);
+            config(doc, "COLLECTORS_PER_SOURCE", COLLECTORS_PER_SOURCE);
             config(doc, "RANDOM_SEED", RANDOM_SEED);
             boost::filesystem::create_directories(JOBMANAGER_DIR.c_str());
             boost::filesystem::create_directories(WORKERMANAGER_DIR.c_str());
@@ -60,6 +61,7 @@ namespace sentinel {
         uint16_t WORKERTHREAD_COUNT, WORKERMANAGER_EPOCH_MS, WORKERMANAGER_UPDATE_MIN_TASKS, WORKERTHREAD_TIMOUT_MS;
         uint16_t RANDOM_SEED;
         uint16_t MAX_LOAD;
+        uint32_t COLLECTORS_PER_SOURCE;
 
         ResourceAllocation DEFAULT_RESOURCE_ALLOCATION;
         std::vector<CharStruct> WORKERMANAGER_LISTS;
@@ -74,14 +76,15 @@ namespace sentinel {
                                  JOBMANAGER_RPC_THREADS(4),
                                  WORKERMANAGER_ID(0),
                                  WORKERMANAGER_RPC_THREADS(4),
-                                 DEFAULT_RESOURCE_ALLOCATION(0, 1,1,10),
+                                 DEFAULT_RESOURCE_ALLOCATION(0, 2,1,15),
                                  JOBMANAGER_DIR("/dev/shm/hari/single_node_jobmanager_server"), //TODO: CHECK if they have to be different
                                  WORKERMANAGER_DIR("/dev/shm/hari/single_node_workermanager_server"),
                                  WORKERMANAGER_EXECUTABLE("${HOME}/projects/rhea/build/sentinel/sentinel_worker_manager"),
                                  WORKERMANAGER_SCRIPT("${HOME}/projects/rhea/scripts/execute_worker_manager.sh"),
                                  JOBMANAGER_COUNT(1),
+                                 COLLECTORS_PER_SOURCE(1),
                                  WORKERMANAGER_COUNT(1),
-                                 WORKERTHREAD_COUNT(2),
+                                 WORKERTHREAD_COUNT(15),
                                  WORKERMANAGER_EPOCH_MS(50),
                                  WORKERMANAGER_UPDATE_MIN_TASKS(256),
                                  WORKERTHREAD_TIMOUT_MS(100),
